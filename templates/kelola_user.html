@@ -1,132 +1,123 @@
 {% extends 'base.html' %}
+{% block nav_kelola_user %}active{% endblock %}
 
 {% block content %}
 <div class="page-header fade">
     <span class="page-emoji">👥</span>
     <h1 class="page-title">Kelola Pengguna</h1>
-    <p class="page-subtitle">Approve atau tolak pendaftaran mahasiswa</p>
+    <p class="page-subtitle">Verifikasi pendaftaran dan kelola akses mahasiswa</p>
 </div>
 
 <div class="page-content">
 
     <!-- PENDING -->
-    <div class="notion-card fade fade-1" style="margin-bottom:24px;">
-        <div style="padding:20px 24px;border-bottom:1px solid #e9e9e7;display:flex;align-items:center;justify-content:space-between;">
+    <div class="notion-card fade fade-1" style="margin-bottom:16px;">
+        <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;">
             <div>
-                <div style="font-size:14px;font-weight:500;color:#1a1a1a;">Menunggu Persetujuan</div>
-                <div style="font-size:12px;color:#9b9b9b;margin-top:2px;">{{ pending.count }} pengguna perlu diverifikasi</div>
+                <div style="font-size:13.5px;font-weight:500;color:var(--text);">Menunggu Persetujuan</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">{{ pending.count }} pengguna perlu diverifikasi</div>
             </div>
             {% if pending %}
-            <span style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;">{{ pending.count }} Pending</span>
+            <span style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;white-space:nowrap;">{{ pending.count }} Pending</span>
             {% endif %}
         </div>
 
         {% if pending %}
-        <div style="padding:8px;">
+        <div style="padding:6px;">
             {% for profile in pending %}
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;transition:background 0.1s;" onmouseover="this.style.background='#f7f7f5'" onmouseout="this.style.background=''">
-                <div style="width:36px;height:36px;border-radius:8px;background:#1a1a1a;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:7px;transition:background 0.1s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+                <div style="width:34px;height:34px;border-radius:8px;background:#d97706;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">
                     {{ profile.user.username|slice:":1"|upper }}
                 </div>
                 <div style="flex:1;min-width:0;">
-                    <div style="font-size:13px;font-weight:500;color:#1a1a1a;">{{ profile.user.username }}</div>
-                    <div style="font-size:11px;color:#9b9b9b;">Daftar {{ profile.dibuat_pada|date:"d M Y, H:i" }}</div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text);">{{ profile.user.username }}</div>
+                    <div style="font-size:11px;color:var(--text-tertiary);">Daftar {{ profile.dibuat_pada|date:"d M Y, H:i" }}</div>
                 </div>
-                <div style="display:flex;gap:8px;flex-shrink:0;">
+                <div style="display:flex;gap:6px;flex-shrink:0;">
                     <form method="post" action="{% url 'approve_user' profile.user.id %}" style="display:inline;">
                         {% csrf_token %}
-                        <button type="submit" style="padding:6px 14px;background:#1a7f4b;color:white;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Geist',sans-serif;transition:opacity 0.1s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-                            ✓ Setujui
-                        </button>
+                        <button type="submit" class="btn btn-primary" style="padding:5px 13px;font-size:12px;background:#1a7f4b;">✓ Setujui</button>
                     </form>
                     <form method="post" action="{% url 'reject_user' profile.user.id %}" style="display:inline;">
                         {% csrf_token %}
-                        <button type="submit" style="padding:6px 14px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Geist',sans-serif;transition:background 0.1s;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
-                            ✕ Tolak
-                        </button>
+                        <button type="submit" class="btn btn-secondary" style="padding:5px 13px;font-size:12px;color:#b91c1c;border-color:#fecaca;">✕ Tolak</button>
                     </form>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div style="padding:32px;text-align:center;color:#9b9b9b;font-size:13px;">
-            Tidak ada pendaftaran yang menunggu persetujuan 🎉
+        <div style="padding:32px;text-align:center;color:var(--text-secondary);font-size:13px;">
+            Tidak ada pendaftaran yang menunggu 🎉
         </div>
         {% endif %}
     </div>
 
     <!-- APPROVED -->
-    <div class="notion-card fade fade-2" style="margin-bottom:24px;">
-        <div style="padding:20px 24px;border-bottom:1px solid #e9e9e7;">
-            <div style="font-size:14px;font-weight:500;color:#1a1a1a;">Mahasiswa Aktif</div>
-            <div style="font-size:12px;color:#9b9b9b;margin-top:2px;">{{ approved.count }} pengguna disetujui</div>
+    <div class="notion-card fade fade-2" style="margin-bottom:16px;">
+        <div style="padding:18px 20px;border-bottom:1px solid var(--border);">
+            <div style="font-size:13.5px;font-weight:500;color:var(--text);">Mahasiswa Aktif</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">{{ approved.count }} pengguna</div>
         </div>
-
         {% if approved %}
-        <div style="padding:8px;">
+        <div style="padding:6px;">
             {% for profile in approved %}
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;transition:background 0.1s;" onmouseover="this.style.background='#f7f7f5'" onmouseout="this.style.background=''">
-                <div style="width:36px;height:36px;border-radius:8px;background:#1a7f4b;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:7px;transition:background 0.1s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+                <div style="width:34px;height:34px;border-radius:8px;background:#1a7f4b;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">
                     {{ profile.user.username|slice:":1"|upper }}
                 </div>
                 <div style="flex:1;min-width:0;">
-                    <div style="font-size:13px;font-weight:500;color:#1a1a1a;">{{ profile.user.username }}</div>
-                    <div style="font-size:11px;color:#9b9b9b;">Disetujui {{ profile.diproses_pada|date:"d M Y" }}</div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text);">
+                        {% if profile.nama_lengkap %}{{ profile.nama_lengkap }}{% else %}{{ profile.user.username }}{% endif %}
+                    </div>
+                    <div style="font-size:11px;color:var(--text-tertiary);">
+                        {% if profile.nama_lengkap %}@{{ profile.user.username }} · {% endif %}Disetujui {{ profile.diproses_pada|date:"d M Y" }}
+                    </div>
                 </div>
-                <div style="display:flex;gap:8px;flex-shrink:0;">
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <a href="{% url 'profil_user' profile.user.id %}" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;">Edit</a>
                     <form method="post" action="{% url 'reject_user' profile.user.id %}" style="display:inline;">
                         {% csrf_token %}
-                        <button type="submit" style="padding:5px 12px;background:transparent;color:#9b9b9b;border:1px solid #e9e9e7;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Geist',sans-serif;" title="Cabut akses">
-                            Cabut
-                        </button>
+                        <button type="submit" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;" title="Cabut akses">Cabut</button>
                     </form>
-                    <form method="post" action="{% url 'hapus_user' profile.user.id %}" style="display:inline;" onsubmit="return confirm('Hapus user {{ profile.user.username }}? Data absensinya juga akan terhapus.')">
+                    <form method="post" action="{% url 'hapus_user' profile.user.id %}" style="display:inline;" onsubmit="return confirm('Hapus {{ profile.user.username }}? Data absensinya juga terhapus.')">
                         {% csrf_token %}
-                        <button type="submit" style="padding:5px 12px;background:transparent;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Geist',sans-serif;">
-                            Hapus
-                        </button>
+                        <button type="submit" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;color:#b91c1c;border-color:#fecaca;">Hapus</button>
                     </form>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div style="padding:32px;text-align:center;color:#9b9b9b;font-size:13px;">
-            Belum ada mahasiswa yang disetujui.
-        </div>
+        <div style="padding:32px;text-align:center;color:var(--text-secondary);font-size:13px;">Belum ada mahasiswa aktif.</div>
         {% endif %}
     </div>
 
     <!-- REJECTED -->
     {% if rejected %}
     <div class="notion-card fade fade-3">
-        <div style="padding:20px 24px;border-bottom:1px solid #e9e9e7;">
-            <div style="font-size:14px;font-weight:500;color:#1a1a1a;">Ditolak</div>
-            <div style="font-size:12px;color:#9b9b9b;margin-top:2px;">{{ rejected.count }} pengguna ditolak</div>
+        <div style="padding:18px 20px;border-bottom:1px solid var(--border);">
+            <div style="font-size:13.5px;font-weight:500;color:var(--text);">Ditolak</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">{{ rejected.count }} pengguna</div>
         </div>
-        <div style="padding:8px;">
+        <div style="padding:6px;">
             {% for profile in rejected %}
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;transition:background 0.1s;" onmouseover="this.style.background='#f7f7f5'" onmouseout="this.style.background=''">
-                <div style="width:36px;height:36px;border-radius:8px;background:#e9e9e7;color:#9b9b9b;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:7px;transition:background 0.1s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+                <div style="width:34px;height:34px;border-radius:8px;background:var(--bg-tertiary);color:var(--text-tertiary);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">
                     {{ profile.user.username|slice:":1"|upper }}
                 </div>
                 <div style="flex:1;min-width:0;">
-                    <div style="font-size:13px;font-weight:500;color:#9b9b9b;">{{ profile.user.username }}</div>
-                    <div style="font-size:11px;color:#c4c4c0;">Ditolak {{ profile.diproses_pada|date:"d M Y" }}</div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-secondary);">{{ profile.user.username }}</div>
+                    <div style="font-size:11px;color:var(--text-tertiary);">Ditolak {{ profile.diproses_pada|date:"d M Y" }}</div>
                 </div>
-                <div style="display:flex;gap:8px;flex-shrink:0;">
+                <div style="display:flex;gap:6px;flex-shrink:0;">
                     <form method="post" action="{% url 'approve_user' profile.user.id %}" style="display:inline;">
                         {% csrf_token %}
-                        <button type="submit" style="padding:5px 12px;background:transparent;color:#1a7f4b;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Geist',sans-serif;">
-                            Setujui
-                        </button>
+                        <button type="submit" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;color:#1a7f4b;border-color:#c3e9d2;">Setujui</button>
                     </form>
-                    <form method="post" action="{% url 'hapus_user' profile.user.id %}" style="display:inline;" onsubmit="return confirm('Hapus user {{ profile.user.username }}?')">
+                    <form method="post" action="{% url 'hapus_user' profile.user.id %}" style="display:inline;" onsubmit="return confirm('Hapus {{ profile.user.username }}?')">
                         {% csrf_token %}
-                        <button type="submit" style="padding:5px 12px;background:transparent;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Geist',sans-serif;">
-                            Hapus
-                        </button>
+                        <button type="submit" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;color:#b91c1c;border-color:#fecaca;">Hapus</button>
                     </form>
                 </div>
             </div>

@@ -5,80 +5,99 @@
 <div class="page-header fade">
     <span class="page-emoji">🏠</span>
     <h1 class="page-title">Beranda</h1>
-    <p class="page-subtitle">Selamat datang kembali, <strong>{{ user.username }}</strong>
-        {% if user.is_superuser %} · <span style="color:#1a7f4b;">Ketua Kelas</span>{% endif %}
+    <p class="page-subtitle">
+        Selamat datang, <strong>{% if user.profile.nama_lengkap %}{{ user.profile.display_name }}{% else %}{{ user.username }}{% endif %}</strong>
+        {% if user.is_superuser %}&nbsp;·&nbsp;<span style="color:#1a7f4b;font-weight:500;">Ketua Kelas</span>{% endif %}
     </p>
 </div>
 
 <div class="page-content">
 
-    <!-- Stat row -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;" class="fade fade-1 stat-grid">
+    <!-- Stat cards -->
+    <div class="stat-grid fade fade-1" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
 
-        <div class="notion-card" style="padding:20px 24px;">
-            <div style="font-size:12px;color:#9b9b9b;font-weight:500;letter-spacing:0.03em;margin-bottom:8px;text-transform:uppercase;">Total Pertemuan</div>
-            <div style="font-family:'Lora',serif;font-size:32px;font-weight:600;color:#1a1a1a;line-height:1;">{{ total_pertemuan }}</div>
-            <div style="font-size:12px;color:#c4c4c0;margin-top:6px;">pertemuan tercatat</div>
+        <div class="notion-card" style="padding:20px 22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Pertemuan</div>
+                <div style="font-size:18px;opacity:0.5;">📅</div>
+            </div>
+            <div style="font-family:'Lora',serif;font-size:34px;font-weight:600;color:var(--text);line-height:1;margin-bottom:6px;">{{ total_pertemuan }}</div>
+            <div style="font-size:12px;color:var(--text-tertiary);">pertemuan tercatat</div>
         </div>
 
-        <div class="notion-card" style="padding:20px 24px;">
-            <div style="font-size:12px;color:#9b9b9b;font-weight:500;letter-spacing:0.03em;margin-bottom:8px;text-transform:uppercase;">Total Hadir</div>
-            <div style="font-family:'Lora',serif;font-size:32px;font-weight:600;color:#1a7f4b;line-height:1;">{{ total_hadir }}</div>
-            <div style="font-size:12px;color:#c4c4c0;margin-top:6px;">dari {{ total_pertemuan }} pertemuan</div>
+        <div class="notion-card" style="padding:20px 22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Kehadiran</div>
+                <div style="font-size:18px;opacity:0.5;">✅</div>
+            </div>
+            <div style="font-family:'Lora',serif;font-size:34px;font-weight:600;color:#1a7f4b;line-height:1;margin-bottom:6px;">{{ total_hadir }}</div>
+            <div style="font-size:12px;color:var(--text-tertiary);">dari {{ total_pertemuan }} pertemuan</div>
         </div>
 
-        <div class="notion-card" style="padding:20px 24px;">
-            <div style="font-size:12px;color:#9b9b9b;font-weight:500;letter-spacing:0.03em;margin-bottom:8px;text-transform:uppercase;">Kehadiran</div>
-            <div style="font-family:'Lora',serif;font-size:32px;font-weight:600;line-height:1;color:
-                {% if persentase >= 75 %}#1a7f4b
-                {% elif persentase >= 50 %}#854d0e
-                {% else %}#b91c1c
-                {% endif %};">{{ persentase }}%</div>
-            <div style="font-size:12px;color:#c4c4c0;margin-top:6px;">persentase kehadiran</div>
+        <div class="notion-card" style="padding:20px 22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Persentase</div>
+                <div style="font-size:18px;opacity:0.5;">📈</div>
+            </div>
+            <div style="font-family:'Lora',serif;font-size:34px;font-weight:600;line-height:1;margin-bottom:6px;color:
+                {% if persentase >= 75 %}#1a7f4b{% elif persentase >= 50 %}#92400e{% else %}#b91c1c{% endif %};">
+                {{ persentase }}%
+            </div>
+            <div style="font-size:12px;color:var(--text-tertiary);">
+                {% if persentase >= 75 %}di atas target{% elif persentase >= 50 %}mendekati target{% else %}di bawah target{% endif %}
+            </div>
         </div>
 
     </div>
 
     <!-- Progress -->
-    <div class="notion-card fade fade-2" style="padding:24px;margin-bottom:32px;">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <div class="notion-card fade fade-2" style="padding:22px 24px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;">
             <div>
-                <div style="font-size:14px;font-weight:500;color:#1a1a1a;margin-bottom:2px;">Progress Kehadiran</div>
-                <div style="font-size:12px;color:#9b9b9b;">Target minimal kehadiran 75%</div>
+                <div style="font-size:13.5px;font-weight:500;color:var(--text);margin-bottom:2px;">Progress Kehadiran</div>
+                <div style="font-size:12px;color:var(--text-secondary);">Target minimal 75% untuk lulus</div>
             </div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:
-                {% if persentase >= 75 %}#1a7f4b
-                {% elif persentase >= 50 %}#854d0e
-                {% else %}#b91c1c
-                {% endif %};">{{ persentase }}%</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:
+                    {% if persentase >= 75 %}#1a7f4b{% elif persentase >= 50 %}#92400e{% else %}#b91c1c{% endif %};">
+                    {{ persentase }}%
+                </span>
+                {% if persentase >= 75 %}
+                <span class="chip chip-green" style="font-size:11px;">Aman ✓</span>
+                {% elif persentase >= 50 %}
+                <span class="chip chip-yellow" style="font-size:11px;">Perhatian</span>
+                {% else %}
+                <span class="chip chip-red" style="font-size:11px;">Bahaya</span>
+                {% endif %}
+            </div>
         </div>
 
-        <div style="background:#f7f7f5;border-radius:3px;height:5px;overflow:hidden;position:relative;">
-            <div style="position:absolute;left:75%;top:-3px;bottom:-3px;width:1px;background:#e9e9e7;z-index:1;"></div>
-            <div id="progressBar" style="height:100%;border-radius:3px;width:0%;transition:width 1s cubic-bezier(0.4,0,0.2,1);background:
-                {% if persentase >= 75 %}#1a7f4b
-                {% elif persentase >= 50 %}#d97706
-                {% else %}#dc2626
-                {% endif %};"></div>
+        <!-- Progress track -->
+        <div style="position:relative;background:var(--bg-secondary);border-radius:100px;height:8px;overflow:hidden;">
+            <!-- Target marker -->
+            <div style="position:absolute;left:75%;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.12);z-index:1;"></div>
+            <div id="progressBar" style="height:100%;border-radius:100px;width:0%;transition:width 1.2s cubic-bezier(0.16,1,0.3,1);background:
+                {% if persentase >= 75 %}linear-gradient(90deg,#22c55e,#1a7f4b){% elif persentase >= 50 %}linear-gradient(90deg,#f59e0b,#d97706){% else %}linear-gradient(90deg,#f87171,#dc2626){% endif %};"></div>
         </div>
 
         <div style="display:flex;justify-content:space-between;margin-top:8px;">
-            <span style="font-size:11px;color:#c4c4c0;font-family:'IBM Plex Mono',monospace;">0%</span>
-            <span style="font-size:11px;color:#9b9b9b;font-family:'IBM Plex Mono',monospace;">target: 75%</span>
-            <span style="font-size:11px;color:#c4c4c0;font-family:'IBM Plex Mono',monospace;">100%</span>
+            <span style="font-size:11px;color:var(--text-tertiary);font-family:'IBM Plex Mono',monospace;">0%</span>
+            <span style="font-size:11px;color:var(--text-secondary);font-family:'IBM Plex Mono',monospace;">target: 75%</span>
+            <span style="font-size:11px;color:var(--text-tertiary);font-family:'IBM Plex Mono',monospace;">100%</span>
         </div>
 
         {% if persentase < 75 %}
-        <div style="margin-top:16px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:13px;color:#b91c1c;display:flex;align-items:center;gap:8px;">
-            <span>⚠️</span> Kehadiranmu masih di bawah 75%. Jangan sampai ketinggalan absen lagi.
+        <div style="margin-top:14px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;font-size:13px;color:#b91c1c;display:flex;align-items:center;gap:8px;">
+            <span>⚠️</span>
+            <span>Kehadiranmu masih di bawah 75%. Kamu perlu hadir <strong>{{ total_pertemuan|add:"-0" }}</strong> pertemuan lagi agar aman.</span>
         </div>
         {% endif %}
     </div>
 
-    <!-- Quick actions (admin) -->
+    <!-- Quick actions (superuser) -->
     {% if user.is_superuser %}
     <div class="fade fade-3">
-        <div style="font-size:12px;font-weight:500;color:#9b9b9b;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:12px;">Quick Actions</div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;">Quick Actions</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <a href="{% url 'buat_pertemuan' %}" class="btn btn-primary">＋ Buat Pertemuan</a>
             <a href="{% url 'rekap_mahasiswa' %}" class="btn btn-secondary">📊 Rekap Mahasiswa</a>
@@ -91,17 +110,18 @@
 
 <style>
 @media (max-width: 640px) {
-    .stat-grid {
-        grid-template-columns: 1fr !important;
-    }
+    .stat-grid { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 400px) {
+    .stat-grid { grid-template-columns: 1fr !important; }
 }
 </style>
 
 <script>
-    window.addEventListener('load', function() {
-        setTimeout(function() {
-            document.getElementById('progressBar').style.width = '{{ persentase }}%';
-        }, 200);
-    });
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        document.getElementById('progressBar').style.width = '{{ persentase }}%';
+    }, 200);
+});
 </script>
 {% endblock %}

@@ -10,13 +10,18 @@
         :root {
             --bg: #ffffff;
             --bg-secondary: #f7f7f5;
+            --bg-tertiary: #f0f0ee;
             --border: #e9e9e7;
+            --border-hover: #d4d4d0;
             --text: #1a1a1a;
-            --text-secondary: #9b9b9b;
-            --text-tertiary: #c4c4c0;
+            --text-secondary: #6b6b6b;
+            --text-tertiary: #a8a8a4;
             --accent: #2e2e2e;
             --accent-hover: #454545;
-            --sidebar-w: 240px;
+            --sidebar-w: 232px;
+            --topbar-h: 48px;
+            --green: #1a7f4b;
+            --green-bg: #f0fdf4;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,29 +31,26 @@
             color: var(--text);
             font-size: 14px;
             line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
-        .font-mono { font-family: 'IBM Plex Mono', monospace; }
-        .font-serif { font-family: 'Lora', Georgia, serif; }
 
-        /* ── Topbar (desktop + mobile) ── */
+        /* ── TOPBAR ── */
         .topbar {
-            display: flex;
             position: fixed;
             top: 0; left: 0; right: 0;
-            height: 52px;
-            background: var(--bg-secondary);
+            height: var(--topbar-h);
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--border);
+            display: flex;
             align-items: center;
-            padding: 0 16px 0 calc(var(--sidebar-w) + 16px);
+            padding: 0 16px 0 calc(var(--sidebar-w) + 20px);
             gap: 8px;
             z-index: 200;
         }
-        .topbar-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text);
-            flex: 1;
-        }
+        .topbar-spacer { flex: 1; }
+
         .hamburger {
             display: none;
             background: none;
@@ -58,141 +60,124 @@
             gap: 4px;
             padding: 6px;
             flex-shrink: 0;
+            border-radius: 6px;
+            transition: background 0.1s;
         }
+        .hamburger:hover { background: var(--bg-secondary); }
         .hamburger span {
             display: block;
-            width: 18px;
-            height: 2px;
-            background: var(--text);
+            width: 16px;
+            height: 1.5px;
+            background: var(--text-secondary);
             border-radius: 2px;
             transition: all 0.2s;
         }
 
-        /* Notif bell button */
+        /* Notif bell */
         .notif-btn {
             position: relative;
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
             text-decoration: none;
             transition: background 0.1s;
             flex-shrink: 0;
+            color: var(--text-secondary);
+            font-size: 15px;
         }
-        .notif-btn:hover { background: var(--border); }
-        .notif-btn .bell { font-size: 17px; line-height: 1; }
-        .notif-dot {
-            display: none;
-            position: absolute;
-            top: 6px; right: 6px;
-            width: 7px; height: 7px;
-            background: #e03e3e;
-            border-radius: 50%;
-            border: 2px solid var(--bg-secondary);
-        }
+        .notif-btn:hover { background: var(--bg-secondary); }
         .notif-count-bubble {
             display: none;
             position: absolute;
-            top: 3px; right: 3px;
+            top: 2px; right: 2px;
             background: #e03e3e;
             color: white;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
-            padding: 0 4px;
+            padding: 0 3px;
             border-radius: 100px;
-            line-height: 15px;
-            min-width: 15px;
+            line-height: 14px;
+            min-width: 14px;
             text-align: center;
-            border: 2px solid var(--bg-secondary);
+            border: 1.5px solid white;
         }
 
-        /* Profile button + dropdown */
+        /* Profile avatar + dropdown */
         .profile-wrap { position: relative; flex-shrink: 0; }
         .profile-avatar-btn {
-            width: 32px; height: 32px;
-            border-radius: 8px;
+            width: 28px; height: 28px;
+            border-radius: 7px;
             background: var(--text);
             color: white;
             border: none;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             font-family: 'Geist', sans-serif;
-            transition: opacity 0.15s;
+            transition: opacity 0.15s, transform 0.1s;
             user-select: none;
+            letter-spacing: 0.02em;
         }
-        .profile-avatar-btn:hover { opacity: 0.8; }
+        .profile-avatar-btn:hover { opacity: 0.85; transform: scale(1.04); }
 
         .profile-dropdown {
             display: none;
             position: absolute;
-            top: calc(100% + 8px);
+            top: calc(100% + 10px);
             right: 0;
-            width: 210px;
+            width: 220px;
             background: white;
             border: 1px solid var(--border);
-            border-radius: 10px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06), 0 16px 40px -4px rgba(0,0,0,0.1);
             z-index: 400;
             overflow: hidden;
-            animation: dropIn 0.15s ease forwards;
+            animation: dropIn 0.15s cubic-bezier(0.16,1,0.3,1) forwards;
         }
         .profile-dropdown.open { display: block; }
 
         @keyframes dropIn {
-            from { opacity: 0; transform: translateY(-6px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .dropdown-header {
-            padding: 12px 14px;
+            padding: 14px;
             border-bottom: 1px solid var(--border);
             background: var(--bg-secondary);
         }
-        .dropdown-username {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text);
-        }
-        .dropdown-role {
-            font-size: 11px;
-            color: var(--text-tertiary);
-            margin-top: 1px;
-        }
+        .dropdown-username { font-size: 13px; font-weight: 600; color: var(--text); }
+        .dropdown-role { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
         .dropdown-body { padding: 6px; }
         .dropdown-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 10px;
-            border-radius: 6px;
+            gap: 9px;
+            padding: 7px 10px;
+            border-radius: 7px;
             text-decoration: none;
             color: var(--text-secondary);
             font-size: 13px;
-            transition: background 0.1s;
+            transition: background 0.1s, color 0.1s;
             cursor: pointer;
         }
         .dropdown-item:hover { background: var(--bg-secondary); color: var(--text); }
         .dropdown-item.danger { color: #e03e3e; }
-        .dropdown-item.danger:hover { background: #fef2f2; color: #e03e3e; }
-        .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
+        .dropdown-item.danger:hover { background: #fef2f2; }
+        .dropdown-divider { height: 1px; background: var(--border); margin: 4px 6px; }
 
-        /* Overlay for sidebar + dropdown close */
+        /* Sidebar overlay */
         .sidebar-overlay {
             display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.3);
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.25);
             z-index: 150;
+            backdrop-filter: blur(2px);
         }
         .sidebar-overlay.active { display: block; }
 
-        /* Sidebar */
+        /* ── SIDEBAR ── */
         .sidebar {
             width: var(--sidebar-w);
             height: 100vh;
@@ -202,64 +187,57 @@
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            padding: 12px 0;
             z-index: 160;
-            transition: transform 0.25s ease;
+            transition: transform 0.25s cubic-bezier(0.16,1,0.3,1);
+            padding-top: var(--topbar-h);
         }
+
         .sidebar-header {
-            padding: 6px 12px 12px;
+            padding: 16px 14px 10px;
             border-bottom: 1px solid var(--border);
-            margin-bottom: 4px;
         }
-        .workspace-btn {
+        .workspace-row {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.1s;
-            width: 100%;
+            gap: 9px;
+            padding: 5px 6px;
+            border-radius: 7px;
         }
-        .workspace-btn:hover { background: var(--border); }
         .workspace-icon {
-            width: 24px; height: 24px;
+            width: 22px; height: 22px;
             background: var(--text);
-            border-radius: 4px;
+            border-radius: 5px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 12px;
-            color: white;
-            flex-shrink: 0;
+            font-size: 11px;
             font-family: 'Lora', serif;
             font-weight: 600;
+            color: white;
+            flex-shrink: 0;
         }
         .workspace-name {
             font-size: 13px;
             font-weight: 600;
             color: var(--text);
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        /* Nav items */
-        .nav-section { padding: 4px 0; }
+        /* Nav */
+        .nav-section { padding: 8px 8px 4px; }
+        .nav-section + .nav-section { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; }
         .nav-section-label {
-            font-size: 11px;
-            font-weight: 500;
+            font-size: 10.5px;
+            font-weight: 600;
             color: var(--text-tertiary);
-            letter-spacing: 0.04em;
-            padding: 8px 14px 4px;
+            letter-spacing: 0.06em;
+            padding: 0 8px 6px;
             text-transform: uppercase;
         }
         .nav-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 5px 12px;
-            border-radius: 4px;
-            margin: 1px 6px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            margin-bottom: 1px;
             color: var(--text-secondary);
             font-size: 13.5px;
             font-weight: 400;
@@ -267,127 +245,87 @@
             transition: background 0.1s, color 0.1s;
             cursor: pointer;
         }
-        .nav-item:hover { background: var(--border); color: var(--text); }
-        .nav-item.active { background: var(--border); color: var(--text); font-weight: 500; }
-        .nav-item .nav-icon { font-size: 14px; width: 20px; text-align: center; opacity: 0.7; }
+        .nav-item:hover { background: var(--bg-tertiary); color: var(--text); }
+        .nav-item.active {
+            background: white;
+            color: var(--text);
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .nav-icon {
+            font-size: 14px;
+            width: 18px;
+            text-align: center;
+            flex-shrink: 0;
+            opacity: 0.75;
+        }
         .nav-item.active .nav-icon { opacity: 1; }
 
-        /* Sidebar footer */
-        .sidebar-footer {
-            margin-top: auto;
-            border-top: 1px solid var(--border);
-            padding: 8px 6px 4px;
-        }
-        .user-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.1s;
-        }
-        .user-item:hover { background: var(--border); }
-        .user-avatar {
-            width: 24px; height: 24px;
-            border-radius: 4px;
-            background: var(--text);
-            color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 11px;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-        .user-name {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text);
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .user-role { font-size: 11px; color: var(--text-tertiary); }
-        .logout-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 5px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.1s;
-            margin-top: 2px;
-        }
-        .logout-item:hover { background: #fff0f0; }
-        .logout-item span { font-size: 13px; color: #e03e3e; }
-
-        /* Main content */
+        /* ── MAIN ── */
         .main {
             margin-left: var(--sidebar-w);
-            padding-top: 52px;
+            padding-top: var(--topbar-h);
             min-height: 100vh;
             background: var(--bg);
         }
 
         /* Page header */
         .page-header {
-            padding: 48px 64px 24px;
+            padding: 40px 56px 24px;
             border-bottom: 1px solid var(--border);
         }
-        .page-emoji { font-size: 36px; margin-bottom: 10px; display: block; }
+        .page-emoji { font-size: 32px; margin-bottom: 10px; display: block; line-height: 1; }
         .page-title {
             font-family: 'Lora', Georgia, serif;
-            font-size: 30px;
+            font-size: 28px;
             font-weight: 600;
             color: var(--text);
             line-height: 1.2;
+            letter-spacing: -0.01em;
         }
-        .page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-        .page-content { padding: 32px 64px 64px; }
+        .page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 5px; }
+        .page-content { padding: 28px 56px 64px; }
 
         /* Cards */
         .notion-card {
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             background: var(--bg);
-            transition: border-color 0.15s;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .notion-card:hover { border-color: #d4d4d0; }
-        .divider { height: 1px; background: var(--border); margin: 0; }
+        .notion-card:hover { border-color: var(--border-hover); }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .fade { animation: fadeIn 0.3s ease forwards; }
-        .fade-1 { animation-delay: 0.05s; opacity: 0; }
-        .fade-2 { animation-delay: 0.1s; opacity: 0; }
-        .fade-3 { animation-delay: 0.15s; opacity: 0; }
+        .fade { animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .fade-1 { animation-delay: 0.04s; opacity: 0; }
+        .fade-2 { animation-delay: 0.09s; opacity: 0; }
+        .fade-3 { animation-delay: 0.14s; opacity: 0; }
+        .fade-4 { animation-delay: 0.19s; opacity: 0; }
 
-        /* Chip */
+        /* Chips */
         .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+            display: inline-flex; align-items: center; gap: 4px;
             padding: 2px 8px;
-            border-radius: 4px;
+            border-radius: 5px;
             font-size: 11.5px;
             font-weight: 500;
             border: 1px solid transparent;
         }
-        .chip-green { background: #eefaf4; color: #1a7f4b; border-color: #b9ecd0; }
+        .chip-green  { background: #eefaf4; color: #1a7f4b; border-color: #c3e9d2; }
         .chip-yellow { background: #fefce8; color: #854d0e; border-color: #fde68a; }
-        .chip-red { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
-        .chip-gray { background: #f7f7f5; color: #6b7280; border-color: var(--border); }
-        .chip-blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .chip-red    { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .chip-gray   { background: #f7f7f5; color: #6b7280; border-color: var(--border); }
+        .chip-blue   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
 
-        /* Button */
+        /* Buttons */
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            display: inline-flex; align-items: center; gap: 6px;
             padding: 6px 14px;
-            border-radius: 6px;
+            border-radius: 7px;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -395,22 +333,37 @@
             text-decoration: none;
             border: none;
             font-family: 'Geist', sans-serif;
+            white-space: nowrap;
         }
-        .btn-primary { background: var(--text); color: white; }
-        .btn-primary:hover { background: var(--accent-hover); }
-        .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
-        .btn-secondary:hover { background: var(--bg-secondary); }
+        .btn-primary {
+            background: var(--text);
+            color: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: var(--bg-secondary); border-color: var(--border-hover); }
+
+        /* Divider */
+        .divider { height: 1px; background: var(--border); }
+
+        /* Font helpers */
+        .font-mono { font-family: 'IBM Plex Mono', monospace; }
+        .font-serif { font-family: 'Lora', Georgia, serif; }
 
         /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
             .hamburger { display: flex; }
-            .topbar { padding: 0 12px; }
-            .topbar-title { display: block; }
-            .sidebar { transform: translateX(-100%); }
+            .topbar { padding: 0 14px; }
+            .sidebar { transform: translateX(-100%); padding-top: 0; }
             .sidebar.open { transform: translateX(0); }
-            .main { margin-left: 0; padding-top: 52px; }
-            .page-header { padding: 24px 20px 16px; }
-            .page-emoji { font-size: 28px; }
+            .main { margin-left: 0; }
+            .page-header { padding: 24px 20px 18px; }
+            .page-emoji { font-size: 26px; }
             .page-title { font-size: 22px; }
             .page-content { padding: 20px 16px 48px; }
         }
@@ -420,16 +373,14 @@
 
 <!-- ── TOPBAR ── -->
 <div class="topbar">
-    <!-- Hamburger (mobile only) -->
     <button class="hamburger" id="hamburger" aria-label="Buka menu">
         <span></span><span></span><span></span>
     </button>
+    <div class="topbar-spacer"></div>
 
-    <div style="flex:1;"></div>
-
-    <!-- Notif bell -->
+    <!-- Notif -->
     <a href="{% url 'pengumuman_list' %}" class="notif-btn" id="notif-bell-btn" title="Pengumuman">
-        <span class="bell">🔔</span>
+        <span>🔔</span>
         <span class="notif-count-bubble" id="notif-bubble"></span>
     </a>
 
@@ -438,13 +389,10 @@
         <button class="profile-avatar-btn" id="profile-btn" aria-label="Profil">
             {% if user.profile.nama_lengkap %}{{ user.profile.inisial }}{% else %}{{ user.username|slice:":1"|upper }}{% endif %}
         </button>
-
-        <!-- Dropdown -->
         <div class="profile-dropdown" id="profile-dropdown">
-            <!-- Header user info -->
             <div class="dropdown-header">
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:32px;height:32px;border-radius:7px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">
+                    <div style="width:30px;height:30px;border-radius:7px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">
                         {% if user.profile.nama_lengkap %}{{ user.profile.inisial }}{% else %}{{ user.username|slice:":1"|upper }}{% endif %}
                     </div>
                     <div>
@@ -453,21 +401,19 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Menu -->
             <div class="dropdown-body">
                 <a href="{% url 'profil' %}" class="dropdown-item">
-                    <span>👤</span> Profil Saya
+                    <span style="font-size:14px;">👤</span> Profil Saya
                 </a>
                 <a href="{% url 'pengumuman_list' %}" class="dropdown-item">
-                    <span>🔔</span> Pengumuman
+                    <span style="font-size:14px;">🔔</span> Pengumuman
                     <span id="notif-count-dd" style="display:none;margin-left:auto;background:#e03e3e;color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:100px;line-height:14px;"></span>
                 </a>
                 <div class="dropdown-divider"></div>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
                     <button type="submit" class="dropdown-item danger" style="width:100%;background:none;border:none;font-family:'Geist',sans-serif;">
-                        <span>🚪</span> Keluar
+                        <span style="font-size:14px;">🚪</span> Keluar
                     </button>
                 </form>
             </div>
@@ -475,49 +421,51 @@
     </div>
 </div>
 
-<!-- Sidebar overlay -->
+<!-- Overlay -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
 <!-- ── SIDEBAR ── -->
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-        <div class="workspace-btn">
+        <div class="workspace-row">
             <div class="workspace-icon">K</div>
-            <span class="workspace-name">Dashboard Kelas</span>
+            <span class="workspace-name">KelasKu</span>
         </div>
     </div>
 
-    <div class="nav-section">
-        <a href="/" class="nav-item {% block nav_home %}{% endblock %}" onclick="closeSidebar()">
-            <span class="nav-icon">🏠</span> Beranda
-        </a>
-        <a href="/absensi/" class="nav-item {% block nav_absensi %}{% endblock %}" onclick="closeSidebar()">
-            <span class="nav-icon">📋</span> Absensi
-        </a>
-        <a href="{% url 'pengumuman_list' %}" class="nav-item {% block nav_pengumuman %}{% endblock %}" style="position:relative;" onclick="closeSidebar()">
-            <span class="nav-icon">🔔</span>
-            <span style="flex:1;">Pengumuman</span>
-            <span id="notif-badge" style="display:none;background:#e03e3e;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:100px;line-height:16px;"></span>
-        </a>
+    <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
+        <div class="nav-section">
+            <a href="/" class="nav-item {% block nav_home %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">🏠</span> Beranda
+            </a>
+            <a href="/absensi/" class="nav-item {% block nav_absensi %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">📋</span> Absensi
+            </a>
+            <a href="{% url 'pengumuman_list' %}" class="nav-item {% block nav_pengumuman %}{% endblock %}" style="position:relative;" onclick="closeSidebar()">
+                <span class="nav-icon">🔔</span>
+                <span style="flex:1;">Pengumuman</span>
+                <span id="notif-badge" style="display:none;background:#e03e3e;color:white;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:100px;line-height:16px;"></span>
+            </a>
+            <a href="{% url 'profil' %}" class="nav-item {% block nav_profil %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">👤</span> Profil
+            </a>
+        </div>
+
+        {% if user.is_superuser %}
+        <div class="nav-section">
+            <div class="nav-section-label">Admin</div>
+            <a href="{% url 'buat_pertemuan' %}" class="nav-item {% block nav_buat %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">＋</span> Buat Pertemuan
+            </a>
+            <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">📊</span> Rekap Mahasiswa
+            </a>
+            <a href="{% url 'kelola_user' %}" class="nav-item {% block nav_kelola_user %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">👥</span> Kelola User
+            </a>
+        </div>
+        {% endif %}
     </div>
-
-    {% if user.is_superuser %}
-    <div class="nav-section">
-        <div class="nav-section-label">Admin</div>
-        <a href="{% url 'buat_pertemuan' %}" class="nav-item {% block nav_buat %}{% endblock %}" onclick="closeSidebar()">
-            <span class="nav-icon">＋</span> Buat Pertemuan
-        </a>
-        <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}" onclick="closeSidebar()">
-            <span class="nav-icon">📊</span> Rekap Mahasiswa
-        </a>
-        <a href="{% url 'kelola_user' %}" class="nav-item {% block nav_kelola_user %}{% endblock %}" onclick="closeSidebar()">
-            <span class="nav-icon">👥</span> Kelola User
-            {# Badge pending user - opsional #}
-        </a>
-    </div>
-    {% endif %}
-
-
 </div>
 
 <!-- ── MAIN ── -->
@@ -526,79 +474,51 @@
 </div>
 
 <script>
-// ── Sidebar ──
-const sidebar  = document.getElementById('sidebar');
-const overlay  = document.getElementById('sidebar-overlay');
+const sidebar   = document.getElementById('sidebar');
+const overlay   = document.getElementById('sidebar-overlay');
 const hamburger = document.getElementById('hamburger');
 
 function openSidebar() {
     sidebar.classList.add('open');
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
-    closeDropdown(); // tutup dropdown kalau sidebar dibuka
+    closeDropdown();
 }
 function closeSidebar() {
     sidebar.classList.remove('open');
     overlay.classList.remove('active');
     document.body.style.overflow = '';
 }
-
 hamburger.addEventListener('click', () => {
     sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
 });
 overlay.addEventListener('click', closeSidebar);
 
-// ── Profile dropdown ──
+// Profile dropdown
 const profileBtn      = document.getElementById('profile-btn');
 const profileDropdown = document.getElementById('profile-dropdown');
-
-function openDropdown() {
-    profileDropdown.classList.add('open');
-}
-function closeDropdown() {
-    profileDropdown.classList.remove('open');
-}
-function toggleDropdown(e) {
+function openDropdown()  { profileDropdown.classList.add('open'); }
+function closeDropdown() { profileDropdown.classList.remove('open'); }
+profileBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     profileDropdown.classList.contains('open') ? closeDropdown() : openDropdown();
-}
-
-profileBtn.addEventListener('click', toggleDropdown);
-
-// Klik di luar → tutup dropdown
+});
 document.addEventListener('click', (e) => {
-    if (!document.getElementById('profile-wrap').contains(e.target)) {
-        closeDropdown();
-    }
+    if (!document.getElementById('profile-wrap').contains(e.target)) closeDropdown();
 });
 
-// ── Notif badge ──
+// Notif badge
 function updateNotifBadge() {
     fetch('/absensi/pengumuman/notif-count/')
         .then(r => r.json())
         .then(data => {
             const count = data.count || 0;
-
-            // Sidebar badge
-            const sidebarBadge = document.getElementById('notif-badge');
-            if (sidebarBadge) {
-                sidebarBadge.textContent = count;
-                sidebarBadge.style.display = count > 0 ? 'inline-block' : 'none';
-            }
-
-            // Topbar bubble
+            const badge = document.getElementById('notif-badge');
+            if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline-block' : 'none'; }
             const bubble = document.getElementById('notif-bubble');
-            if (bubble) {
-                bubble.textContent = count > 9 ? '9+' : count;
-                bubble.style.display = count > 0 ? 'block' : 'none';
-            }
-
-            // Dropdown count
-            const ddCount = document.getElementById('notif-count-dd');
-            if (ddCount) {
-                ddCount.textContent = count;
-                ddCount.style.display = count > 0 ? 'inline-block' : 'none';
-            }
+            if (bubble) { bubble.textContent = count > 9 ? '9+' : count; bubble.style.display = count > 0 ? 'block' : 'none'; }
+            const dd = document.getElementById('notif-count-dd');
+            if (dd) { dd.textContent = count; dd.style.display = count > 0 ? 'inline-block' : 'none'; }
         }).catch(() => {});
 }
 updateNotifBadge();
