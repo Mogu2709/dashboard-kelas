@@ -30,24 +30,30 @@
         .font-mono { font-family: 'IBM Plex Mono', monospace; }
         .font-serif { font-family: 'Lora', Georgia, serif; }
 
-        /* ── Mobile topbar ── */
-        .mobile-topbar {
-            display: none;
+        /* ── Topbar (desktop + mobile) ── */
+        .topbar {
+            display: flex;
             position: fixed;
             top: 0; left: 0; right: 0;
             height: 52px;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
             align-items: center;
-            padding: 0 12px;
+            padding: 0 16px 0 calc(var(--sidebar-w) + 16px);
             gap: 8px;
             z-index: 200;
         }
+        .topbar-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            flex: 1;
+        }
         .hamburger {
+            display: none;
             background: none;
             border: none;
             cursor: pointer;
-            display: flex;
             flex-direction: column;
             gap: 4px;
             padding: 6px;
@@ -318,6 +324,7 @@
         /* Main content */
         .main {
             margin-left: var(--sidebar-w);
+            padding-top: 52px;
             min-height: 100vh;
             background: var(--bg);
         }
@@ -396,7 +403,9 @@
 
         /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
-            .mobile-topbar { display: flex; }
+            .hamburger { display: flex; }
+            .topbar { padding: 0 12px; }
+            .topbar-title { display: block; }
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); }
             .main { margin-left: 0; padding-top: 52px; }
@@ -409,16 +418,14 @@
 </head>
 <body>
 
-<!-- ── MOBILE TOPBAR ── -->
-<div class="mobile-topbar">
-    <!-- Hamburger -->
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+    <!-- Hamburger (mobile only) -->
     <button class="hamburger" id="hamburger" aria-label="Buka menu">
         <span></span><span></span><span></span>
     </button>
 
-    <!-- Logo -->
-    <div class="workspace-icon">K</div>
-    <span style="font-size:13px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dashboard Kelas</span>
+    <div style="flex:1;"></div>
 
     <!-- Notif bell -->
     <a href="{% url 'pengumuman_list' %}" class="notif-btn" id="notif-bell-btn" title="Pengumuman">
@@ -429,7 +436,7 @@
     <!-- Profile -->
     <div class="profile-wrap" id="profile-wrap">
         <button class="profile-avatar-btn" id="profile-btn" aria-label="Profil">
-            {{ user.username|slice:":1"|upper }}
+            {% if user.profile.nama_lengkap %}{{ user.profile.inisial }}{% else %}{{ user.username|slice:":1"|upper }}{% endif %}
         </button>
 
         <!-- Dropdown -->
@@ -449,9 +456,6 @@
 
             <!-- Menu -->
             <div class="dropdown-body">
-                <a href="/" class="dropdown-item">
-                    <span>🏠</span> Beranda
-                </a>
                 <a href="{% url 'profil' %}" class="dropdown-item">
                     <span>👤</span> Profil Saya
                 </a>
@@ -495,9 +499,6 @@
             <span style="flex:1;">Pengumuman</span>
             <span id="notif-badge" style="display:none;background:#e03e3e;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:100px;line-height:16px;"></span>
         </a>
-        <a href="{% url 'profil' %}" class="nav-item {% block nav_profil %}{% endblock %}" onclick="closeSidebar()">
-            <span class="nav-icon">👤</span> Profil
-        </a>
     </div>
 
     {% if user.is_superuser %}
@@ -511,26 +512,12 @@
         </a>
         <a href="{% url 'kelola_user' %}" class="nav-item {% block nav_kelola_user %}{% endblock %}" onclick="closeSidebar()">
             <span class="nav-icon">👥</span> Kelola User
+            {# Badge pending user - opsional #}
         </a>
     </div>
     {% endif %}
 
-    <div class="sidebar-footer">
-        <div class="user-item">
-            <div class="user-avatar">{% if user.profile.nama_lengkap %}{{ user.profile.inisial }}{% else %}{{ user.username|slice:":1"|upper }}{% endif %}</div>
-            <div style="flex:1;min-width:0;">
-                <div class="user-name">{% if user.profile.nama_lengkap %}{{ user.profile.nama_lengkap }}{% else %}{{ user.username }}{% endif %}</div>
-                <div class="user-role">{% if user.is_superuser %}Ketua Kelas{% else %}Mahasiswa{% endif %}</div>
-            </div>
-        </div>
-        <form method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button type="submit" class="logout-item" style="width:100%;background:none;border:none;cursor:pointer;">
-                <span class="nav-icon" style="font-size:14px;opacity:0.6;">🚪</span>
-                <span>Keluar</span>
-            </button>
-        </form>
-    </div>
+
 </div>
 
 <!-- ── MAIN ── -->
