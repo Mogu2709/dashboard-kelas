@@ -30,6 +30,47 @@
         .font-mono { font-family: 'IBM Plex Mono', monospace; }
         .font-serif { font-family: 'Lora', Georgia, serif; }
 
+        /* ── Mobile topbar ── */
+        .mobile-topbar {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 52px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            z-index: 200;
+        }
+        .hamburger {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 4px;
+        }
+        .hamburger span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background: var(--text);
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        /* Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 150;
+        }
+        .sidebar-overlay.active { display: block; }
+
         /* Sidebar */
         .sidebar {
             width: var(--sidebar-w);
@@ -41,7 +82,8 @@
             display: flex;
             flex-direction: column;
             padding: 12px 0;
-            z-index: 100;
+            z-index: 160;
+            transition: transform 0.25s ease;
         }
 
         .sidebar-header {
@@ -84,10 +126,7 @@
             text-overflow: ellipsis;
         }
 
-        /* Nav items */
-        .nav-section {
-            padding: 4px 0;
-        }
+        .nav-section { padding: 4px 0; }
         .nav-section-label {
             font-size: 11px;
             font-weight: 500;
@@ -111,24 +150,11 @@
             transition: background 0.1s, color 0.1s;
             cursor: pointer;
         }
-        .nav-item:hover {
-            background: var(--border);
-            color: var(--text);
-        }
-        .nav-item.active {
-            background: var(--border);
-            color: var(--text);
-            font-weight: 500;
-        }
-        .nav-item .nav-icon {
-            font-size: 14px;
-            width: 20px;
-            text-align: center;
-            opacity: 0.7;
-        }
+        .nav-item:hover { background: var(--border); color: var(--text); }
+        .nav-item.active { background: var(--border); color: var(--text); font-weight: 500; }
+        .nav-item .nav-icon { font-size: 14px; width: 20px; text-align: center; opacity: 0.7; }
         .nav-item.active .nav-icon { opacity: 1; }
 
-        /* User section */
         .sidebar-footer {
             margin-top: auto;
             border-top: 1px solid var(--border);
@@ -163,10 +189,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .user-role {
-            font-size: 11px;
-            color: var(--text-tertiary);
-        }
+        .user-role { font-size: 11px; color: var(--text-tertiary); }
 
         .logout-item {
             display: flex;
@@ -193,11 +216,7 @@
             padding: 48px 64px 24px;
             border-bottom: 1px solid var(--border);
         }
-        .page-emoji {
-            font-size: 36px;
-            margin-bottom: 10px;
-            display: block;
-        }
+        .page-emoji { font-size: 36px; margin-bottom: 10px; display: block; }
         .page-title {
             font-family: 'Lora', Georgia, serif;
             font-size: 30px;
@@ -205,18 +224,12 @@
             color: var(--text);
             line-height: 1.2;
         }
-        .page-subtitle {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
+        .page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
 
         /* Content area */
-        .page-content {
-            padding: 32px 64px 64px;
-        }
+        .page-content { padding: 32px 64px 64px; }
 
-        /* Cards — notion style: border, no shadow */
+        /* Cards */
         .notion-card {
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -225,14 +238,8 @@
         }
         .notion-card:hover { border-color: #d4d4d0; }
 
-        /* Divider */
-        .divider {
-            height: 1px;
-            background: var(--border);
-            margin: 0;
-        }
+        .divider { height: 1px; background: var(--border); margin: 0; }
 
-        /* Fade in */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
@@ -242,7 +249,6 @@
         .fade-2 { animation-delay: 0.1s; opacity: 0; }
         .fade-3 { animation-delay: 0.15s; opacity: 0; }
 
-        /* Chip/badge */
         .chip {
             display: inline-flex;
             align-items: center;
@@ -259,7 +265,6 @@
         .chip-gray { background: #f7f7f5; color: #6b7280; border-color: var(--border); }
         .chip-blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
 
-        /* Button */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -274,23 +279,56 @@
             border: none;
             font-family: 'Geist', sans-serif;
         }
-        .btn-primary {
-            background: var(--text);
-            color: white;
-        }
+        .btn-primary { background: var(--text); color: white; }
         .btn-primary:hover { background: var(--accent-hover); }
-        .btn-secondary {
-            background: var(--bg);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
+        .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
         .btn-secondary:hover { background: var(--bg-secondary); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .mobile-topbar { display: flex; }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-left: 0;
+                padding-top: 52px;
+            }
+
+            .page-header {
+                padding: 24px 20px 16px;
+            }
+            .page-emoji { font-size: 28px; }
+            .page-title { font-size: 22px; }
+
+            .page-content {
+                padding: 20px 16px 48px;
+            }
+        }
     </style>
 </head>
 <body>
 
+<!-- Mobile topbar -->
+<div class="mobile-topbar">
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="workspace-icon">K</div>
+    <span style="font-size:13px;font-weight:600;color:var(--text);">Dashboard Kelas</span>
+    <span id="notif-badge-mobile" style="display:none;background:#e03e3e;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:100px;margin-left:auto;"></span>
+</div>
+
+<!-- Overlay -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
 <!-- Sidebar -->
-<div class="sidebar">
+<div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <div class="workspace-btn">
             <div class="workspace-icon">K</div>
@@ -299,13 +337,13 @@
     </div>
 
     <div class="nav-section">
-        <a href="/" class="nav-item {% block nav_home %}{% endblock %}">
+        <a href="/" class="nav-item {% block nav_home %}{% endblock %}" onclick="closeSidebar()">
             <span class="nav-icon">🏠</span> Beranda
         </a>
-        <a href="/absensi/" class="nav-item {% block nav_absensi %}{% endblock %}">
+        <a href="/absensi/" class="nav-item {% block nav_absensi %}{% endblock %}" onclick="closeSidebar()">
             <span class="nav-icon">📋</span> Absensi
         </a>
-        <a href="{% url 'pengumuman_list' %}" class="nav-item {% block nav_pengumuman %}{% endblock %}" style="position:relative;">
+        <a href="{% url 'pengumuman_list' %}" class="nav-item {% block nav_pengumuman %}{% endblock %}" style="position:relative;" onclick="closeSidebar()">
             <span class="nav-icon">🔔</span>
             <span style="flex:1;">Pengumuman</span>
             <span id="notif-badge" style="display:none;background:#e03e3e;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:100px;line-height:16px;"></span>
@@ -315,10 +353,10 @@
     {% if user.is_superuser %}
     <div class="nav-section">
         <div class="nav-section-label">Admin</div>
-        <a href="{% url 'buat_pertemuan' %}" class="nav-item {% block nav_buat %}{% endblock %}">
+        <a href="{% url 'buat_pertemuan' %}" class="nav-item {% block nav_buat %}{% endblock %}" onclick="closeSidebar()">
             <span class="nav-icon">＋</span> Buat Pertemuan
         </a>
-        <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}">
+        <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}" onclick="closeSidebar()">
             <span class="nav-icon">📊</span> Rekap Mahasiswa
         </a>
     </div>
@@ -348,20 +386,43 @@
 </div>
 
 <script>
-// Poll notif count setiap 30 detik
+// Sidebar toggle
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebar-overlay');
+const hamburger = document.getElementById('hamburger');
+
+function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+hamburger.addEventListener('click', () => {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+});
+overlay.addEventListener('click', closeSidebar);
+
+// Notif badge
 function updateNotifBadge() {
     fetch('/absensi/pengumuman/notif-count/')
         .then(r => r.json())
         .then(data => {
             const badge = document.getElementById('notif-badge');
-            if (badge) {
+            const badgeMobile = document.getElementById('notif-badge-mobile');
+            [badge, badgeMobile].forEach(b => {
+                if (!b) return;
                 if (data.count > 0) {
-                    badge.textContent = data.count;
-                    badge.style.display = 'inline-block';
+                    b.textContent = data.count;
+                    b.style.display = 'inline-block';
                 } else {
-                    badge.style.display = 'none';
+                    b.style.display = 'none';
                 }
-            }
+            });
         }).catch(() => {});
 }
 updateNotifBadge();

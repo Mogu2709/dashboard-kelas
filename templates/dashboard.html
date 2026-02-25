@@ -13,7 +13,7 @@
 <div class="page-content">
 
     <!-- Stat row -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;" class="fade fade-1">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;" class="fade fade-1 stat-grid">
 
         <div class="notion-card" style="padding:20px 24px;">
             <div style="font-size:12px;color:#9b9b9b;font-weight:500;letter-spacing:0.03em;margin-bottom:8px;text-transform:uppercase;">Total Pertemuan</div>
@@ -41,7 +41,7 @@
 
     <!-- Progress -->
     <div class="notion-card fade fade-2" style="padding:24px;margin-bottom:32px;">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
             <div>
                 <div style="font-size:14px;font-weight:500;color:#1a1a1a;margin-bottom:2px;">Progress Kehadiran</div>
                 <div style="font-size:12px;color:#9b9b9b;">Target minimal kehadiran 75%</div>
@@ -53,9 +53,7 @@
                 {% endif %};">{{ persentase }}%</div>
         </div>
 
-        <!-- Track -->
         <div style="background:#f7f7f5;border-radius:3px;height:5px;overflow:hidden;position:relative;">
-            <!-- Target marker -->
             <div style="position:absolute;left:75%;top:-3px;bottom:-3px;width:1px;background:#e9e9e7;z-index:1;"></div>
             <div id="progressBar" style="height:100%;border-radius:3px;width:0%;transition:width 1s cubic-bezier(0.4,0,0.2,1);background:
                 {% if persentase >= 75 %}#1a7f4b
@@ -90,6 +88,14 @@
     {% endif %}
 
 </div>
+
+<style>
+@media (max-width: 640px) {
+    .stat-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
 
 <script>
     window.addEventListener('load', function() {
