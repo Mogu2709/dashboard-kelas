@@ -321,7 +321,16 @@
     </button>
     <div class="workspace-icon">K</div>
     <span style="font-size:13px;font-weight:600;color:var(--text);">Dashboard Kelas</span>
-    <span id="notif-badge-mobile" style="display:none;background:#e03e3e;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:100px;margin-left:auto;"></span>
+    <span style="flex:1;"></span>
+    <!-- Notif badge: clickable link to pengumuman -->
+    <a href="{% url 'pengumuman_list' %}" id="notif-badge-mobile" style="display:none;background:#e03e3e;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-decoration:none;line-height:20px;"></a>
+    <!-- Logout button di topbar mobile -->
+    <form method="post" action="{% url 'logout' %}" style="display:flex;">
+        {% csrf_token %}
+        <button type="submit" style="background:none;border:none;cursor:pointer;padding:6px 4px;display:flex;align-items:center;font-size:18px;opacity:0.65;" title="Keluar">
+            🚪
+        </button>
+    </form>
 </div>
 
 <!-- Overlay -->
