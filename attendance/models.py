@@ -79,14 +79,14 @@ class Pengumuman(models.Model):
         # Handle youtu.be short links
         if 'youtu.be/' in url:
             vid = url.split('youtu.be/')[-1].split('?')[0]
-            return f'https://www.youtube.com/embed/{vid}'
+            return f'https://www.youtube.com/embed/{vid}?origin=https://web-production-1d4d8.up.railway.app'
         # Handle youtube.com/watch?v=
         if 'youtube.com/watch' in url:
             import urllib.parse
             params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
             vid = params.get('v', [None])[0]
             if vid:
-                return f'https://www.youtube.com/embed/{vid}'
+                return f'https://www.youtube.com/embed/{vid}?origin=https://web-production-1d4d8.up.railway.app'
         # Handle youtube.com/embed/ already
         if 'youtube.com/embed/' in url:
             return url
