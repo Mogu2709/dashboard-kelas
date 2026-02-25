@@ -39,8 +39,8 @@
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
             align-items: center;
-            padding: 0 16px;
-            gap: 12px;
+            padding: 0 12px;
+            gap: 8px;
             z-index: 200;
         }
         .hamburger {
@@ -50,18 +50,133 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-            padding: 4px;
+            padding: 6px;
+            flex-shrink: 0;
         }
         .hamburger span {
             display: block;
-            width: 20px;
+            width: 18px;
             height: 2px;
             background: var(--text);
             border-radius: 2px;
             transition: all 0.2s;
         }
 
-        /* Overlay */
+        /* Notif bell button */
+        .notif-btn {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: background 0.1s;
+            flex-shrink: 0;
+        }
+        .notif-btn:hover { background: var(--border); }
+        .notif-btn .bell { font-size: 17px; line-height: 1; }
+        .notif-dot {
+            display: none;
+            position: absolute;
+            top: 6px; right: 6px;
+            width: 7px; height: 7px;
+            background: #e03e3e;
+            border-radius: 50%;
+            border: 2px solid var(--bg-secondary);
+        }
+        .notif-count-bubble {
+            display: none;
+            position: absolute;
+            top: 3px; right: 3px;
+            background: #e03e3e;
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 0 4px;
+            border-radius: 100px;
+            line-height: 15px;
+            min-width: 15px;
+            text-align: center;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        /* Profile button + dropdown */
+        .profile-wrap { position: relative; flex-shrink: 0; }
+        .profile-avatar-btn {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            background: var(--text);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Geist', sans-serif;
+            transition: opacity 0.15s;
+            user-select: none;
+        }
+        .profile-avatar-btn:hover { opacity: 0.8; }
+
+        .profile-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 210px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            z-index: 400;
+            overflow: hidden;
+            animation: dropIn 0.15s ease forwards;
+        }
+        .profile-dropdown.open { display: block; }
+
+        @keyframes dropIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-header {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+        .dropdown-username {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .dropdown-role {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 1px;
+        }
+        .dropdown-body { padding: 6px; }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            transition: background 0.1s;
+            cursor: pointer;
+        }
+        .dropdown-item:hover { background: var(--bg-secondary); color: var(--text); }
+        .dropdown-item.danger { color: #e03e3e; }
+        .dropdown-item.danger:hover { background: #fef2f2; color: #e03e3e; }
+        .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+        /* Overlay for sidebar + dropdown close */
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -85,13 +200,11 @@
             z-index: 160;
             transition: transform 0.25s ease;
         }
-
         .sidebar-header {
             padding: 6px 12px 12px;
             border-bottom: 1px solid var(--border);
             margin-bottom: 4px;
         }
-
         .workspace-btn {
             display: flex;
             align-items: center;
@@ -103,7 +216,6 @@
             width: 100%;
         }
         .workspace-btn:hover { background: var(--border); }
-
         .workspace-icon {
             width: 24px; height: 24px;
             background: var(--text);
@@ -115,7 +227,6 @@
             font-family: 'Lora', serif;
             font-weight: 600;
         }
-
         .workspace-name {
             font-size: 13px;
             font-weight: 600;
@@ -126,6 +237,7 @@
             text-overflow: ellipsis;
         }
 
+        /* Nav items */
         .nav-section { padding: 4px 0; }
         .nav-section-label {
             font-size: 11px;
@@ -135,7 +247,6 @@
             padding: 8px 14px 4px;
             text-transform: uppercase;
         }
-
         .nav-item {
             display: flex;
             align-items: center;
@@ -155,6 +266,7 @@
         .nav-item .nav-icon { font-size: 14px; width: 20px; text-align: center; opacity: 0.7; }
         .nav-item.active .nav-icon { opacity: 1; }
 
+        /* Sidebar footer */
         .sidebar-footer {
             margin-top: auto;
             border-top: 1px solid var(--border);
@@ -190,7 +302,6 @@
             text-overflow: ellipsis;
         }
         .user-role { font-size: 11px; color: var(--text-tertiary); }
-
         .logout-item {
             display: flex;
             align-items: center;
@@ -225,8 +336,6 @@
             line-height: 1.2;
         }
         .page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-
-        /* Content area */
         .page-content { padding: 32px 64px 64px; }
 
         /* Cards */
@@ -237,7 +346,6 @@
             transition: border-color 0.15s;
         }
         .notion-card:hover { border-color: #d4d4d0; }
-
         .divider { height: 1px; background: var(--border); margin: 0; }
 
         @keyframes fadeIn {
@@ -249,6 +357,7 @@
         .fade-2 { animation-delay: 0.1s; opacity: 0; }
         .fade-3 { animation-delay: 0.15s; opacity: 0; }
 
+        /* Chip */
         .chip {
             display: inline-flex;
             align-items: center;
@@ -265,6 +374,7 @@
         .chip-gray { background: #f7f7f5; color: #6b7280; border-color: var(--border); }
         .chip-blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
 
+        /* Button */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -287,56 +397,81 @@
         /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
             .mobile-topbar { display: flex; }
-
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            .sidebar.open {
-                transform: translateX(0);
-            }
-
-            .main {
-                margin-left: 0;
-                padding-top: 52px;
-            }
-
-            .page-header {
-                padding: 24px 20px 16px;
-            }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; padding-top: 52px; }
+            .page-header { padding: 24px 20px 16px; }
             .page-emoji { font-size: 28px; }
             .page-title { font-size: 22px; }
-
-            .page-content {
-                padding: 20px 16px 48px;
-            }
+            .page-content { padding: 20px 16px 48px; }
         }
     </style>
 </head>
 <body>
 
-<!-- Mobile topbar -->
+<!-- ── MOBILE TOPBAR ── -->
 <div class="mobile-topbar">
-    <button class="hamburger" id="hamburger" aria-label="Menu">
+    <!-- Hamburger -->
+    <button class="hamburger" id="hamburger" aria-label="Buka menu">
         <span></span><span></span><span></span>
     </button>
+
+    <!-- Logo -->
     <div class="workspace-icon">K</div>
-    <span style="font-size:13px;font-weight:600;color:var(--text);">Dashboard Kelas</span>
-    <span style="flex:1;"></span>
-    <!-- Notif badge: clickable link to pengumuman -->
-    <a href="{% url 'pengumuman_list' %}" id="notif-badge-mobile" style="display:none;background:#e03e3e;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-decoration:none;line-height:20px;"></a>
-    <!-- Logout button di topbar mobile -->
-    <form method="post" action="{% url 'logout' %}" style="display:flex;">
-        {% csrf_token %}
-        <button type="submit" style="background:none;border:none;cursor:pointer;padding:6px 4px;display:flex;align-items:center;font-size:18px;opacity:0.65;" title="Keluar">
-            🚪
+    <span style="font-size:13px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dashboard Kelas</span>
+
+    <!-- Notif bell -->
+    <a href="{% url 'pengumuman_list' %}" class="notif-btn" id="notif-bell-btn" title="Pengumuman">
+        <span class="bell">🔔</span>
+        <span class="notif-count-bubble" id="notif-bubble"></span>
+    </a>
+
+    <!-- Profile -->
+    <div class="profile-wrap" id="profile-wrap">
+        <button class="profile-avatar-btn" id="profile-btn" aria-label="Profil">
+            {{ user.username|slice:":1"|upper }}
         </button>
-    </form>
+
+        <!-- Dropdown -->
+        <div class="profile-dropdown" id="profile-dropdown">
+            <!-- Header user info -->
+            <div class="dropdown-header">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:32px;height:32px;border-radius:7px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <div class="dropdown-username">{{ user.username }}</div>
+                        <div class="dropdown-role">{% if user.is_superuser %}Ketua Kelas{% else %}Mahasiswa{% endif %}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu -->
+            <div class="dropdown-body">
+                <a href="/" class="dropdown-item">
+                    <span>🏠</span> Beranda
+                </a>
+                <a href="{% url 'pengumuman_list' %}" class="dropdown-item">
+                    <span>🔔</span> Pengumuman
+                    <span id="notif-count-dd" style="display:none;margin-left:auto;background:#e03e3e;color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:100px;line-height:14px;"></span>
+                </a>
+                <div class="dropdown-divider"></div>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="dropdown-item danger" style="width:100%;background:none;border:none;font-family:'Geist',sans-serif;">
+                        <span>🚪</span> Keluar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Overlay -->
+<!-- Sidebar overlay -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-<!-- Sidebar -->
+<!-- ── SIDEBAR ── -->
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <div class="workspace-btn">
@@ -389,21 +524,22 @@
     </div>
 </div>
 
-<!-- Main -->
+<!-- ── MAIN ── -->
 <div class="main">
     {% block content %}{% endblock %}
 </div>
 
 <script>
-// Sidebar toggle
-const sidebar = document.getElementById('sidebar');
-const overlay = document.getElementById('sidebar-overlay');
+// ── Sidebar ──
+const sidebar  = document.getElementById('sidebar');
+const overlay  = document.getElementById('sidebar-overlay');
 const hamburger = document.getElementById('hamburger');
 
 function openSidebar() {
     sidebar.classList.add('open');
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
+    closeDropdown(); // tutup dropdown kalau sidebar dibuka
 }
 function closeSidebar() {
     sidebar.classList.remove('open');
@@ -416,22 +552,57 @@ hamburger.addEventListener('click', () => {
 });
 overlay.addEventListener('click', closeSidebar);
 
-// Notif badge
+// ── Profile dropdown ──
+const profileBtn      = document.getElementById('profile-btn');
+const profileDropdown = document.getElementById('profile-dropdown');
+
+function openDropdown() {
+    profileDropdown.classList.add('open');
+}
+function closeDropdown() {
+    profileDropdown.classList.remove('open');
+}
+function toggleDropdown(e) {
+    e.stopPropagation();
+    profileDropdown.classList.contains('open') ? closeDropdown() : openDropdown();
+}
+
+profileBtn.addEventListener('click', toggleDropdown);
+
+// Klik di luar → tutup dropdown
+document.addEventListener('click', (e) => {
+    if (!document.getElementById('profile-wrap').contains(e.target)) {
+        closeDropdown();
+    }
+});
+
+// ── Notif badge ──
 function updateNotifBadge() {
     fetch('/absensi/pengumuman/notif-count/')
         .then(r => r.json())
         .then(data => {
-            const badge = document.getElementById('notif-badge');
-            const badgeMobile = document.getElementById('notif-badge-mobile');
-            [badge, badgeMobile].forEach(b => {
-                if (!b) return;
-                if (data.count > 0) {
-                    b.textContent = data.count;
-                    b.style.display = 'inline-block';
-                } else {
-                    b.style.display = 'none';
-                }
-            });
+            const count = data.count || 0;
+
+            // Sidebar badge
+            const sidebarBadge = document.getElementById('notif-badge');
+            if (sidebarBadge) {
+                sidebarBadge.textContent = count;
+                sidebarBadge.style.display = count > 0 ? 'inline-block' : 'none';
+            }
+
+            // Topbar bubble
+            const bubble = document.getElementById('notif-bubble');
+            if (bubble) {
+                bubble.textContent = count > 9 ? '9+' : count;
+                bubble.style.display = count > 0 ? 'block' : 'none';
+            }
+
+            // Dropdown count
+            const ddCount = document.getElementById('notif-count-dd');
+            if (ddCount) {
+                ddCount.textContent = count;
+                ddCount.style.display = count > 0 ? 'inline-block' : 'none';
+            }
         }).catch(() => {});
 }
 updateNotifBadge();
