@@ -73,7 +73,9 @@ class PertemuanForm(forms.ModelForm):
         fields = ['mata_kuliah', 'judul', 'tanggal']
 
 
-@user_passes_test(admin_check)
+# FIX: tambah @login_required + login_url agar tidak error redirect
+@login_required
+@user_passes_test(admin_check, login_url='/login/')
 def buat_pertemuan(request):
     if request.method == 'POST':
         form = PertemuanForm(request.POST)
@@ -138,7 +140,8 @@ def tandai_semua_dibaca(request):
     return redirect('pengumuman_list')
 
 
-@user_passes_test(admin_check)
+@login_required
+@user_passes_test(admin_check, login_url='/login/')
 def buat_pengumuman(request):
     if request.method == 'POST':
         judul     = request.POST.get('judul', '').strip()
@@ -165,7 +168,8 @@ def buat_pengumuman(request):
     return render(request, 'buat_pengumuman.html')
 
 
-@user_passes_test(admin_check)
+@login_required
+@user_passes_test(admin_check, login_url='/login/')
 def edit_pengumuman(request, pk):
     pengumuman = get_object_or_404(Pengumuman, pk=pk)
 
@@ -178,7 +182,6 @@ def edit_pengumuman(request, pk):
         pengumuman.diedit_pada = timezone.now()
         pengumuman.save()
 
-        # Handle new uploads
         files = request.FILES.getlist('attachments')
         for f in files:
             tipe = get_attachment_tipe(f)
@@ -187,7 +190,6 @@ def edit_pengumuman(request, pk):
             att.ukuran = f.size
             att.save()
 
-        # Handle deleted attachments
         hapus_ids = request.POST.getlist('hapus_attachment')
         if hapus_ids:
             PengumumanAttachment.objects.filter(
@@ -198,13 +200,14 @@ def edit_pengumuman(request, pk):
     return render(request, 'edit_pengumuman.html', {'pengumuman': pengumuman})
 
 
-@user_passes_test(admin_check)
+# FIX: hapus template konfirmasi yang belum ada, langsung hapus via POST
+@login_required
+@user_passes_test(admin_check, login_url='/login/')
 def hapus_pengumuman(request, pk):
-    pengumuman = get_object_or_404(Pengumuman, pk=pk)
     if request.method == 'POST':
+        pengumuman = get_object_or_404(Pengumuman, pk=pk)
         pengumuman.delete()
-        return redirect('pengumuman_list')
-    return render(request, 'konfirmasi_hapus_pengumuman.html', {'pengumuman': pengumuman})
+    return redirect('pengumuman_list')
 
 
 # ─── LIKE ─────────────────────────────────────────────────────────────────────

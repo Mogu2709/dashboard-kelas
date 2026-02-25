@@ -5,8 +5,16 @@
     <div class="auth-title">Masuk</div>
     <div class="auth-subtitle">Masukkan kredensial akunmu</div>
 
-    {% if form.errors %}
+    {% if error == 'invalid' %}
     <div class="error-box">Username atau password salah. Coba lagi.</div>
+    {% elif error == 'pending' %}
+    <div class="error-box" style="background:#fffbeb;border-color:#fcd34d;color:#92400e;">
+        ⏳ Akunmu masih menunggu persetujuan ketua kelas. Sabar ya!
+    </div>
+    {% elif error == 'rejected' %}
+    <div class="error-box" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;">
+        ❌ Akunmu tidak disetujui. Hubungi ketua kelas untuk info lebih lanjut.
+    </div>
     {% endif %}
 
     <form method="post">

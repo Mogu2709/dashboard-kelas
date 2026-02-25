@@ -503,6 +503,10 @@
         <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}" onclick="closeSidebar()">
             <span class="nav-icon">📊</span> Rekap Mahasiswa
         </a>
+        <a href="{% url 'kelola_user' %}" class="nav-item {% block nav_kelola_user %}{% endblock %}" onclick="closeSidebar()">
+            <span class="nav-icon">👥</span> Kelola User
+            {# Badge pending user - opsional #}
+        </a>
     </div>
     {% endif %}
 
