@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% block nav_pengumuman %}active{% endblock %}
+
+{% block content %}
+<style>
+    /* ── Card ── */
+    .p-card {
+        border: 1px solid #e9e9e7;
+        border-radius: 10px;
+        background: white;
+        transition: border-color 0.15s;
+        overflow: hidden;
+    }
+    .p-card:hover { border-color: #d4d4d0; }
+    .p-card.unread { border-left: 3px solid #1a1a1a; }
+    .p-card.pinned-card { border-top: 2px solid #1a1a1a; }
+
+    /* ── Prioritas ── */
+    .dot { width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0; }
+    .dot-normal { background:#9b9b9b; }
+    .dot-penting { background:#d97706; }
+    .dot-urgent  { background:#dc2626; }
+
+    /* ── Attachments ── */
+    .attach-grid { display:flex;flex-wrap:wrap;gap:8px;margin-top:12px; }
+    .attach-img {
+        width:120px;height:90px;object-fit:cover;border-radius:6px;
+        border:1px solid #e9e9e7;cursor:pointer;transition:opacity 0.15s;
+    }
+    .attach-img:hover { opacity:0.85; }
+    .attach-video {
+        width:100%;max-width:480px;border-radius:8px;
+        border:1px solid #e9e9e7;
+    }
+    .attach-file {
+        display:inline-flex;align-items:center;gap:8px;
+        padding:8px 12px;border:1px solid #e9e9e7;border-radius:6px;
+        font-size:13px;color:#374151;text-decoration:none;
+        background:#f7f7f5;transition:background 0.1s;
+    }
+    .attach-file:hover { background:#efefed; }
+    .yt-embed {
+        width:100%;max-width:480px;aspect-ratio:16/9;
+        border-radius:8px;border:none;
+    }
+
+    /* ── Like ── */
+    .like-btn {
+        display:inline-flex;align-items:center;gap:5px;
+        padding:5px 10px;border-radius:6px;border:1px solid #e9e9e7;
+        background:none;cursor:pointer;font-size:13px;color:#6b6b6b;
+        font-family:'Geist',sans-serif;transition:all 0.15s;
+    }
+    .like-btn:hover { background:#fff5f5;border-color:#fecaca;color:#e03e3e; }
+    .like-btn.liked  { background:#fff5f5;border-color:#fecaca;color:#e03e3e; }
+
+    /* ── Action btns ── */
+    .action-btn {
+        display:inline-flex;align-items:center;gap:5px;
+        padding:5px 10px;border-radius:6px;border:1px solid #e9e9e7;
+        background:none;cursor:pointer;font-size:13px;color:#6b6b6b;
+        font-family:'Geist',sans-serif;transition:all 0.15s;text-decoration:none;
+    }
+    .action-btn:hover { background:#f7f7f5;color:#1a1a1a; }
+    .action-btn.danger:hover { background:#fef2f2;border-color:#fecaca;color:#e03e3e; }
+
+    /* ── Comments ── */
+    .comment-section { border-top:1px solid #f7f7f5;padding:16px 22px;background:#fafaf8; }
+    .comment-item {
+        display:flex;gap:10px;margin-bottom:14px;
+    }
+    .comment-avatar {
+        width:28px;height:28px;border-radius:6px;background:#1a1a1a;
+        color:white;display:flex;align-items:center;justify-content:center;
+        font-size:11px;font-weight:700;flex-shrink:0;
+        font-family:'Lora',serif;
+    }
+    .comment-bubble {
+        flex:1;background:white;border:1px solid #e9e9e7;
+        border-radius:8px;padding:10px 14px;
+    }
+    .comment-bubble.reply-bubble {
+        background:#f7f7f5;
+    }
+    .reply-thread { margin-left:38px;margin-top:8px; }
+    .comment-input {
+        width:100%;border:1px solid #e9e9e7;border-radius:8px;
+        padding:9px 12px;font-size:13px;resize:none;outline:none;
+        font-family:'Geist',sans-serif;color:#1a1a1a;
+        transition:border-color 0.15s;background:white;
+    }
+    .comment-input:focus { border-color:#1a1a1a;box-shadow:0 0 0 2px rgba(26,26,26,0.06); }
+    .send-btn {
+        padding:7px 14px;background:#1a1a1a;color:white;border:none;
+        border-radius:6px;font-size:13px;cursor:pointer;font-family:'Geist',sans-serif;
+        transition:background 0.15s;
+    }
+    .send-btn:hover { background:#333; }
+
+    /* ── Lightbox ── */
+    .lightbox {
+        display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+        z-index:9999;align-items:center;justify-content:center;
+    }
+    .lightbox.open { display:flex; }
+    .lightbox img { max-width:90vw;max-height:90vh;border-radius:8px; }
+    .lightbox-close {
+        position:absolute;top:20px;right:28px;color:white;font-size:28px;
+        cursor:pointer;opacity:0.7;transition:opacity 0.15s;
+    }
+    .lightbox-close:hover { opacity:1; }
+</style>
+
+<!-- Header -->
+<div class="page-header fade">
+    <span class="page-emoji">🔔</span>
+    <h1 class="page-title">Pengumuman</h1>
+    <p class="page-subtitle">
+        {% if belum_dibaca > 0 %}<span style="color:#e03e3e;font-weight:500;">{{ belum_dibaca }} belum dibaca</span> · {% endif %}
+        {{ pengumuman_list|length }} pengumuman
+    </p>
+</div>
+
+<div class="page-content">
+
+    <!-- Toolbar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;" class="fade fade-1">
+        <div>
+            {% if belum_dibaca > 0 %}
+            <a href="{% url 'tandai_semua_dibaca' %}" class="btn btn-secondary" style="font-size:13px;">✓ Tandai Semua Dibaca</a>
+            {% endif %}
+        </div>
+        {% if user.is_superuser %}
+        <a href="{% url 'buat_pengumuman' %}" class="btn btn-primary">＋ Buat Pengumuman</a>
+        {% endif %}
+    </div>
+
+    <!-- List -->
+    <div style="display:flex;flex-direction:column;gap:12px;" class="fade fade-2">
+    {% for p in pengumuman_list %}
+    <div class="p-card {% if p.id not in dibaca_ids %}unread{% endif %} {% if p.pinned %}pinned-card{% endif %}" id="post-{{ p.id }}">
+
+        <!-- Body -->
+        <div style="padding:18px 22px;">
+
+            <!-- Meta -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+                {% if p.pinned %}<span style="font-size:11px;color:#6b6b6b;background:#f7f7f5;border:1px solid #e9e9e7;padding:2px 7px;border-radius:4px;">📌 Pinned</span>{% endif %}
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;">
+                    <span class="dot dot-{{ p.prioritas }}"></span>
+                    {% if p.prioritas == 'urgent' %}<span style="color:#dc2626;">Urgent</span>
+                    {% elif p.prioritas == 'penting' %}<span style="color:#d97706;">Penting</span>
+                    {% else %}<span style="color:#9b9b9b;">Normal</span>{% endif %}
+                </span>
+                {% if p.id not in dibaca_ids %}
+                <span style="font-size:11px;font-weight:600;background:#1a1a1a;color:white;padding:2px 7px;border-radius:4px;">Baru</span>
+                {% endif %}
+                <span style="font-size:12px;color:#c4c4c0;font-family:'IBM Plex Mono',monospace;margin-left:auto;">
+                    {{ p.dibuat_pada|date:"d M Y, H:i" }}
+                    {% if p.is_edited %}<span style="color:#d4d4d0;"> · diedit</span>{% endif %}
+                </span>
+            </div>
+
+            <!-- Title -->
+            <div style="font-size:17px;font-weight:600;color:#1a1a1a;margin-bottom:8px;font-family:'Lora',serif;">{{ p.judul }}</div>
+
+            <!-- Isi -->
+            <div style="font-size:14px;color:#4b4b4b;line-height:1.7;white-space:pre-line;margin-bottom:12px;">{{ p.isi }}</div>
+
+            <!-- Attachments -->
+            {% if p.attachments.all or p.embed_url %}
+            <div class="attach-grid">
+
+                {% for att in p.attachments.all %}
+                    {% if att.tipe == 'foto' %}
+                    <img src="{{ att.file.url }}" class="attach-img" alt="{{ att.nama_asli }}"
+                         onclick="openLightbox('{{ att.file.url }}')" title="{{ att.nama_asli }}">
+                    {% elif att.tipe == 'video' %}
+                    <video class="attach-video" controls>
+                        <source src="{{ att.file.url }}">
+                        Browser kamu tidak mendukung video.
+                    </video>
+                    {% else %}
+                    <a href="{{ att.file.url }}" class="attach-file" download="{{ att.nama_asli }}" target="_blank">
+                        📎 {{ att.nama_asli }} <span style="color:#c4c4c0;">({{ att.ukuran_display }})</span>
+                    </a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if p.youtube_embed_url %}
+                <div style="width:100%;">
+                    <iframe class="yt-embed" src="{{ p.youtube_embed_url }}"
+                        allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                    </iframe>
+                </div>
+                {% elif p.embed_url and not p.youtube_embed_url %}
+                <a href="{{ p.embed_url }}" class="attach-file" target="_blank" rel="noopener">
+                    🔗 {{ p.embed_url|truncatechars:60 }}
+                </a>
+                {% endif %}
+
+            </div>
+            {% endif %}
+
+            <!-- Footer actions -->
+            <div style="display:flex;align-items:center;gap:8px;margin-top:16px;flex-wrap:wrap;padding-top:14px;border-top:1px solid #f7f7f5;">
+                <span style="font-size:12px;color:#c4c4c0;">oleh <strong style="color:#9b9b9b;">{{ p.dibuat_oleh.username }}</strong></span>
+
+                <!-- Like -->
+                <button class="like-btn {% if p.id in liked_ids %}liked{% endif %}"
+                    onclick="toggleLike({{ p.id }}, this)"
+                    data-pengumuman="{{ p.id }}">
+                    <span>{% if p.id in liked_ids %}❤️{% else %}🤍{% endif %}</span>
+                    <span class="like-count">{{ p.like_count }}</span>
+                </button>
+
+                <!-- Comment toggle -->
+                <button class="action-btn" onclick="toggleComments({{ p.id }})">
+                    💬 <span id="ccount-{{ p.id }}">{{ p.komentar.count }}</span>
+                </button>
+
+                {% if p.id not in dibaca_ids %}
+                <a href="{% url 'tandai_dibaca' p.id %}" class="action-btn">✓ Tandai Dibaca</a>
+                {% else %}
+                <span style="font-size:12px;color:#1a7f4b;">✓ Dibaca</span>
+                {% endif %}
+
+                {% if user.is_superuser %}
+                <a href="{% url 'edit_pengumuman' p.id %}" class="action-btn" style="margin-left:auto;">✏️ Edit</a>
+                <form method="post" action="{% url 'hapus_pengumuman' p.id %}" style="display:inline;" onsubmit="return confirm('Hapus pengumuman ini?')">
+                    {% csrf_token %}
+                    <button type="submit" class="action-btn danger">🗑️ Hapus</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="comment-section" id="comments-{{ p.id }}" style="display:none;">
+            <!-- Existing comments -->
+            <div id="comment-list-{{ p.id }}">
+                {% for k in p.komentar.all %}
+                {% if not k.parent %}
+                <div class="comment-item" id="comment-{{ k.id }}">
+                    <div class="comment-avatar">{{ k.user.username|slice:":1"|upper }}</div>
+                    <div style="flex:1;">
+                        <div class="comment-bubble">
+                            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+                                <span style="font-size:13px;font-weight:600;color:#1a1a1a;">{{ k.user.username }}</span>
+                                {% if k.user.is_superuser %}<span style="font-size:10px;background:#1a1a1a;color:white;padding:1px 6px;border-radius:3px;">Ketua</span>{% endif %}
+                                <span style="font-size:11px;color:#c4c4c0;font-family:'IBM Plex Mono',monospace;">{{ k.dibuat_pada|date:"d M, H:i" }}{% if k.is_edited %} · diedit{% endif %}</span>
+                            </div>
+                            <div class="comment-text" style="font-size:13.5px;color:#374151;line-height:1.5;">{{ k.isi }}</div>
+                            <div style="display:flex;gap:8px;margin-top:8px;">
+                                <button class="action-btn" style="font-size:12px;padding:3px 8px;" onclick="showReplyBox({{ p.id }}, {{ k.id }})">↩ Balas</button>
+                                {% if k.user == request.user or user.is_superuser %}
+                                <button class="action-btn" style="font-size:12px;padding:3px 8px;" onclick="startEditComment({{ k.id }}, this)">✏️</button>
+                                <button class="action-btn danger" style="font-size:12px;padding:3px 8px;" onclick="hapusKomentar({{ k.id }}, '{{ p.id }}')">🗑️</button>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Replies -->
+                        <div class="reply-thread" id="replies-{{ k.id }}">
+                            {% for r in k.replies.all %}
+                            <div class="comment-item" id="comment-{{ r.id }}" style="margin-bottom:10px;">
+                                <div class="comment-avatar" style="width:24px;height:24px;font-size:10px;">{{ r.user.username|slice:":1"|upper }}</div>
+                                <div style="flex:1;">
+                                    <div class="comment-bubble reply-bubble">
+                                        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+                                            <span style="font-size:12.5px;font-weight:600;color:#1a1a1a;">{{ r.user.username }}</span>
+                                            {% if r.user.is_superuser %}<span style="font-size:10px;background:#1a1a1a;color:white;padding:1px 5px;border-radius:3px;">Ketua</span>{% endif %}
+                                            <span style="font-size:11px;color:#c4c4c0;font-family:'IBM Plex Mono',monospace;">{{ r.dibuat_pada|date:"d M, H:i" }}{% if r.is_edited %} · diedit{% endif %}</span>
+                                        </div>
+                                        <div class="comment-text" style="font-size:13px;color:#374151;">{{ r.isi }}</div>
+                                        {% if r.user == request.user or user.is_superuser %}
+                                        <div style="display:flex;gap:6px;margin-top:6px;">
+                                            <button class="action-btn" style="font-size:11px;padding:2px 7px;" onclick="startEditComment({{ r.id }}, this)">✏️</button>
+                                            <button class="action-btn danger" style="font-size:11px;padding:2px 7px;" onclick="hapusKomentar({{ r.id }}, '{{ p.id }}')">🗑️</button>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Reply box placeholder -->
+                        <div id="reply-box-{{ k.id }}" style="display:none;margin-top:8px;margin-left:0;">
+                            <div style="display:flex;gap:8px;align-items:flex-start;">
+                                <textarea class="comment-input" rows="2" placeholder="Tulis balasan..." id="reply-input-{{ k.id }}"></textarea>
+                                <button class="send-btn" onclick="kirimKomentar({{ p.id }}, '{{ k.id }}')">Kirim</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- New comment box -->
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-top:8px;">
+                <div class="comment-avatar">{{ request.user.username|slice:":1"|upper }}</div>
+                <div style="flex:1;">
+                    <textarea class="comment-input" rows="2" placeholder="Tulis komentar..." id="new-comment-{{ p.id }}"></textarea>
+                    <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+                        <button class="send-btn" onclick="kirimKomentar({{ p.id }}, null)">Kirim</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:56px;border:1px solid #e9e9e7;border-radius:10px;color:#9b9b9b;">
+        <div style="font-size:32px;margin-bottom:10px;">🔔</div>
+        <div style="font-size:14px;font-weight:500;color:#6b6b6b;margin-bottom:4px;">Belum ada pengumuman</div>
+        <div style="font-size:13px;">Pengumuman dari ketua kelas akan muncul di sini</div>
+    </div>
+    {% endfor %}
+    </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <span class="lightbox-close" onclick="closeLightbox()">✕</span>
+    <img src="" id="lightbox-img" alt="">
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+
+// ── Toggle comments ──
+function toggleComments(id) {
+    const el = document.getElementById('comments-' + id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── Like ──
+function toggleLike(id, btn) {
+    fetch(`/absensi/pengumuman/${id}/like/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF},
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.querySelector('.like-count').textContent = data.count;
+        btn.querySelector('span:first-child').textContent = data.liked ? '❤️' : '🤍';
+        btn.classList.toggle('liked', data.liked);
+    });
+}
+
+// ── Kirim komentar / reply ──
+function kirimKomentar(postId, parentId) {
+    let isi, inputEl;
+    if (parentId) {
+        inputEl = document.getElementById('reply-input-' + parentId);
+    } else {
+        inputEl = document.getElementById('new-comment-' + postId);
+    }
+    isi = inputEl.value.trim();
+    if (!isi) return;
+
+    const body = new FormData();
+    body.append('isi', isi);
+    if (parentId) body.append('parent_id', parentId);
+
+    fetch(`/absensi/pengumuman/${postId}/komentar/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF},
+        body,
+    })
+    .then(r => r.json())
+    .then(data => {
+        inputEl.value = '';
+        if (parentId) {
+            document.getElementById('reply-box-' + parentId).style.display = 'none';
+        }
+        appendKomentar(data, postId, parentId);
+        // update count
+        const cc = document.getElementById('ccount-' + postId);
+        if (cc && !parentId) cc.textContent = parseInt(cc.textContent) + 1;
+    });
+}
+
+function appendKomentar(data, postId, parentId) {
+    const isAdmin = data.is_superuser;
+    const adminBadge = isAdmin ? `<span style="font-size:10px;background:#1a1a1a;color:white;padding:1px 6px;border-radius:3px;">Ketua</span>` : '';
+    const html = `
+    <div class="comment-item" id="comment-${data.id}">
+        <div class="comment-avatar" style="${parentId ? 'width:24px;height:24px;font-size:10px;' : ''}">${data.user[0].toUpperCase()}</div>
+        <div style="flex:1;">
+            <div class="comment-bubble ${parentId ? 'reply-bubble' : ''}">
+                <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+                    <span style="font-size:${parentId ? '12.5' : '13'}px;font-weight:600;color:#1a1a1a;">${data.user}</span>
+                    ${adminBadge}
+                    <span style="font-size:11px;color:#c4c4c0;font-family:'IBM Plex Mono',monospace;">${data.dibuat_pada}</span>
+                </div>
+                <div class="comment-text" style="font-size:${parentId ? '13' : '13.5'}px;color:#374151;">${data.isi}</div>
+                <div style="display:flex;gap:6px;margin-top:6px;">
+                    ${!parentId ? `<button class="action-btn" style="font-size:12px;padding:3px 8px;" onclick="showReplyBox(${postId}, ${data.id})">↩ Balas</button>` : ''}
+                    <button class="action-btn" style="font-size:${parentId ? '11' : '12'}px;padding:${parentId ? '2px 7px' : '3px 8px'};" onclick="startEditComment(${data.id}, this)">✏️</button>
+                    <button class="action-btn danger" style="font-size:${parentId ? '11' : '12'}px;padding:${parentId ? '2px 7px' : '3px 8px'};" onclick="hapusKomentar(${data.id}, '${postId}')">🗑️</button>
+                </div>
+            </div>
+            ${!parentId ? `<div class="reply-thread" id="replies-${data.id}"></div><div id="reply-box-${data.id}" style="display:none;margin-top:8px;"><div style="display:flex;gap:8px;align-items:flex-start;"><textarea class="comment-input" rows="2" placeholder="Tulis balasan..." id="reply-input-${data.id}"></textarea><button class="send-btn" onclick="kirimKomentar(${postId}, '${data.id}')">Kirim</button></div></div>` : ''}
+        </div>
+    </div>`;
+
+    if (parentId) {
+        document.getElementById('replies-' + parentId).insertAdjacentHTML('beforeend', html);
+    } else {
+        document.getElementById('comment-list-' + postId).insertAdjacentHTML('beforeend', html);
+    }
+}
+
+// ── Show reply box ──
+function showReplyBox(postId, parentId) {
+    const box = document.getElementById('reply-box-' + parentId);
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    if (box.style.display === 'block') {
+        document.getElementById('reply-input-' + parentId).focus();
+    }
+}
+
+// ── Edit komentar ──
+function startEditComment(id, btn) {
+    const item = document.getElementById('comment-' + id);
+    const textEl = item.querySelector('.comment-text');
+    const oldText = textEl.textContent.trim();
+
+    textEl.innerHTML = `
+        <textarea class="comment-input" rows="2" style="margin-bottom:6px;">${oldText}</textarea>
+        <div style="display:flex;gap:6px;">
+            <button class="send-btn" onclick="simpanEditComment(${id}, this)" style="font-size:12px;padding:5px 10px;">Simpan</button>
+            <button class="action-btn" onclick="batalEditComment(${id}, '${oldText.replace(/'/g, "\\'")}', this)" style="font-size:12px;padding:5px 10px;">Batal</button>
+        </div>`;
+}
+
+function simpanEditComment(id, btn) {
+    const item = document.getElementById('comment-' + id);
+    const isi = item.querySelector('textarea').value.trim();
+    if (!isi) return;
+
+    const body = new FormData();
+    body.append('isi', isi);
+
+    fetch(`/absensi/komentar/${id}/edit/`, {
+        method: 'POST', headers: {'X-CSRFToken': CSRF}, body,
+    })
+    .then(r => r.json())
+    .then(data => {
+        const textEl = item.querySelector('.comment-text');
+        textEl.innerHTML = `${data.isi} <span style="font-size:11px;color:#c4c4c0;"> · diedit</span>`;
+    });
+}
+
+function batalEditComment(id, oldText, btn) {
+    document.getElementById('comment-' + id).querySelector('.comment-text').textContent = oldText;
+}
+
+// ── Hapus komentar ──
+function hapusKomentar(id, postId) {
+    if (!confirm('Hapus komentar ini?')) return;
+    fetch(`/absensi/komentar/${id}/hapus/`, {
+        method: 'POST', headers: {'X-CSRFToken': CSRF},
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.deleted) {
+            document.getElementById('comment-' + id).remove();
+            const cc = document.getElementById('ccount-' + postId);
+            if (cc) cc.textContent = Math.max(0, parseInt(cc.textContent) - 1);
+        }
+    });
+}
+
+// ── Lightbox ──
+function openLightbox(url) {
+    document.getElementById('lightbox-img').src = url;
+    document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+</script>
+{% endblock %}

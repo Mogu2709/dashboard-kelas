@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Kelas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --bg-secondary: #f7f7f5;
+            --border: #e9e9e7;
+            --text: #1a1a1a;
+            --text-secondary: #9b9b9b;
+            --text-tertiary: #c4c4c0;
+            --accent: #2e2e2e;
+            --accent-hover: #454545;
+            --sidebar-w: 240px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Geist', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .font-mono { font-family: 'IBM Plex Mono', monospace; }
+        .font-serif { font-family: 'Lora', Georgia, serif; }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-w);
+            height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 12px 0;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 6px 12px 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 4px;
+        }
+
+        .workspace-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.1s;
+            width: 100%;
+        }
+        .workspace-btn:hover { background: var(--border); }
+
+        .workspace-icon {
+            width: 24px; height: 24px;
+            background: var(--text);
+            border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px;
+            color: white;
+            flex-shrink: 0;
+            font-family: 'Lora', serif;
+            font-weight: 600;
+        }
+
+        .workspace-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Nav items */
+        .nav-section {
+            padding: 4px 0;
+        }
+        .nav-section-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            letter-spacing: 0.04em;
+            padding: 8px 14px 4px;
+            text-transform: uppercase;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 12px;
+            border-radius: 4px;
+            margin: 1px 6px;
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            font-weight: 400;
+            text-decoration: none;
+            transition: background 0.1s, color 0.1s;
+            cursor: pointer;
+        }
+        .nav-item:hover {
+            background: var(--border);
+            color: var(--text);
+        }
+        .nav-item.active {
+            background: var(--border);
+            color: var(--text);
+            font-weight: 500;
+        }
+        .nav-item .nav-icon {
+            font-size: 14px;
+            width: 20px;
+            text-align: center;
+            opacity: 0.7;
+        }
+        .nav-item.active .nav-icon { opacity: 1; }
+
+        /* User section */
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border);
+            padding: 8px 6px 4px;
+        }
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .user-item:hover { background: var(--border); }
+        .user-avatar {
+            width: 24px; height: 24px;
+            border-radius: 4px;
+            background: var(--text);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .user-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .user-role {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        .logout-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.1s;
+            margin-top: 2px;
+        }
+        .logout-item:hover { background: #fff0f0; }
+        .logout-item span { font-size: 13px; color: #e03e3e; }
+
+        /* Main content */
+        .main {
+            margin-left: var(--sidebar-w);
+            min-height: 100vh;
+            background: var(--bg);
+        }
+
+        /* Page header */
+        .page-header {
+            padding: 48px 64px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        .page-emoji {
+            font-size: 36px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .page-title {
+            font-family: 'Lora', Georgia, serif;
+            font-size: 30px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.2;
+        }
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Content area */
+        .page-content {
+            padding: 32px 64px 64px;
+        }
+
+        /* Cards — notion style: border, no shadow */
+        .notion-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            transition: border-color 0.15s;
+        }
+        .notion-card:hover { border-color: #d4d4d0; }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        /* Fade in */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade { animation: fadeIn 0.3s ease forwards; }
+        .fade-1 { animation-delay: 0.05s; opacity: 0; }
+        .fade-2 { animation-delay: 0.1s; opacity: 0; }
+        .fade-3 { animation-delay: 0.15s; opacity: 0; }
+
+        /* Chip/badge */
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11.5px;
+            font-weight: 500;
+            border: 1px solid transparent;
+        }
+        .chip-green { background: #eefaf4; color: #1a7f4b; border-color: #b9ecd0; }
+        .chip-yellow { background: #fefce8; color: #854d0e; border-color: #fde68a; }
+        .chip-red { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .chip-gray { background: #f7f7f5; color: #6b7280; border-color: var(--border); }
+        .chip-blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+
+        /* Button */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.1s;
+            text-decoration: none;
+            border: none;
+            font-family: 'Geist', sans-serif;
+        }
+        .btn-primary {
+            background: var(--text);
+            color: white;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: var(--bg-secondary); }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="sidebar-header">
+        <div class="workspace-btn">
+            <div class="workspace-icon">K</div>
+            <span class="workspace-name">Dashboard Kelas</span>
+        </div>
+    </div>
+
+    <div class="nav-section">
+        <a href="/" class="nav-item {% block nav_home %}{% endblock %}">
+            <span class="nav-icon">🏠</span> Beranda
+        </a>
+        <a href="/absensi/" class="nav-item {% block nav_absensi %}{% endblock %}">
+            <span class="nav-icon">📋</span> Absensi
+        </a>
+        <a href="{% url 'pengumuman_list' %}" class="nav-item {% block nav_pengumuman %}{% endblock %}" style="position:relative;">
+            <span class="nav-icon">🔔</span>
+            <span style="flex:1;">Pengumuman</span>
+            <span id="notif-badge" style="display:none;background:#e03e3e;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:100px;line-height:16px;"></span>
+        </a>
+    </div>
+
+    {% if user.is_superuser %}
+    <div class="nav-section">
+        <div class="nav-section-label">Admin</div>
+        <a href="{% url 'buat_pertemuan' %}" class="nav-item {% block nav_buat %}{% endblock %}">
+            <span class="nav-icon">＋</span> Buat Pertemuan
+        </a>
+        <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}">
+            <span class="nav-icon">📊</span> Rekap Mahasiswa
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="sidebar-footer">
+        <div class="user-item">
+            <div class="user-avatar">{{ user.username|slice:":1"|upper }}</div>
+            <div style="flex:1;min-width:0;">
+                <div class="user-name">{{ user.username }}</div>
+                <div class="user-role">{% if user.is_superuser %}Ketua Kelas{% else %}Mahasiswa{% endif %}</div>
+            </div>
+        </div>
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="logout-item" style="width:100%;background:none;border:none;cursor:pointer;">
+                <span class="nav-icon" style="font-size:14px;opacity:0.6;">🚪</span>
+                <span>Keluar</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+    {% block content %}{% endblock %}
+</div>
+
+<script>
+// Poll notif count setiap 30 detik
+function updateNotifBadge() {
+    fetch('/absensi/pengumuman/notif-count/')
+        .then(r => r.json())
+        .then(data => {
+            const badge = document.getElementById('notif-badge');
+            if (badge) {
+                if (data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }).catch(() => {});
+}
+updateNotifBadge();
+setInterval(updateNotifBadge, 30000);
+</script>
+</body>
+</html>

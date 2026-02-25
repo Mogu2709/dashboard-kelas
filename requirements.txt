@@ -1,0 +1,8 @@
+django>=4.2,<5.0
+gunicorn
+whitenoise
+openpyxl
+reportlab
+Pillow
+python-decouple
+dj-database-url
