@@ -438,10 +438,10 @@
             <div class="dropdown-header">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <div style="width:32px;height:32px;border-radius:7px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">
-                        {{ user.username|slice:":1"|upper }}
+                        {% if user.profile.nama_lengkap %}{{ user.profile.inisial }}{% else %}{{ user.username|slice:":1"|upper }}{% endif %}
                     </div>
                     <div>
-                        <div class="dropdown-username">{{ user.username }}</div>
+                        <div class="dropdown-username">{% if user.profile.nama_lengkap %}{{ user.profile.nama_lengkap }}{% else %}{{ user.username }}{% endif %}</div>
                         <div class="dropdown-role">{% if user.is_superuser %}Ketua Kelas{% else %}Mahasiswa{% endif %}</div>
                     </div>
                 </div>
@@ -451,6 +451,9 @@
             <div class="dropdown-body">
                 <a href="/" class="dropdown-item">
                     <span>🏠</span> Beranda
+                </a>
+                <a href="{% url 'profil' %}" class="dropdown-item">
+                    <span>👤</span> Profil Saya
                 </a>
                 <a href="{% url 'pengumuman_list' %}" class="dropdown-item">
                     <span>🔔</span> Pengumuman
@@ -492,6 +495,9 @@
             <span style="flex:1;">Pengumuman</span>
             <span id="notif-badge" style="display:none;background:#e03e3e;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:100px;line-height:16px;"></span>
         </a>
+        <a href="{% url 'profil' %}" class="nav-item {% block nav_profil %}{% endblock %}" onclick="closeSidebar()">
+            <span class="nav-icon">👤</span> Profil
+        </a>
     </div>
 
     {% if user.is_superuser %}
@@ -505,16 +511,15 @@
         </a>
         <a href="{% url 'kelola_user' %}" class="nav-item {% block nav_kelola_user %}{% endblock %}" onclick="closeSidebar()">
             <span class="nav-icon">👥</span> Kelola User
-            {# Badge pending user - opsional #}
         </a>
     </div>
     {% endif %}
 
     <div class="sidebar-footer">
         <div class="user-item">
-            <div class="user-avatar">{{ user.username|slice:":1"|upper }}</div>
+            <div class="user-avatar">{% if user.profile.nama_lengkap %}{{ user.profile.inisial }}{% else %}{{ user.username|slice:":1"|upper }}{% endif %}</div>
             <div style="flex:1;min-width:0;">
-                <div class="user-name">{{ user.username }}</div>
+                <div class="user-name">{% if user.profile.nama_lengkap %}{{ user.profile.nama_lengkap }}{% else %}{{ user.username }}{% endif %}</div>
                 <div class="user-role">{% if user.is_superuser %}Ketua Kelas{% else %}Mahasiswa{% endif %}</div>
             </div>
         </div>
