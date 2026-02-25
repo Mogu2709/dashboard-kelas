@@ -188,9 +188,12 @@
                 {% endfor %}
 
                 {% if p.youtube_embed_url %}
+                {% if p.youtube_embed_url %}
                 <div style="width:100%;">
                     <iframe class="yt-embed" src="{{ p.youtube_embed_url }}"
-                        allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                        allowfullscreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerpolicy="strict-origin-when-cross-origin">
                     </iframe>
                 </div>
                 {% elif p.embed_url and not p.youtube_embed_url %}
