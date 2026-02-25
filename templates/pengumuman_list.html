@@ -188,7 +188,6 @@
                 {% endfor %}
 
                 {% if p.youtube_embed_url %}
-                {% if p.youtube_embed_url %}
                 <div style="width:100%;">
                     <iframe class="yt-embed" src="{{ p.youtube_embed_url }}"
                         allowfullscreen
@@ -196,7 +195,7 @@
                         referrerpolicy="strict-origin-when-cross-origin">
                     </iframe>
                 </div>
-                {% elif p.embed_url and not p.youtube_embed_url %}
+                {% elif p.embed_url %}
                 <a href="{{ p.embed_url }}" class="attach-file" target="_blank" rel="noopener">
                     🔗 {{ p.embed_url|truncatechars:60 }}
                 </a>
