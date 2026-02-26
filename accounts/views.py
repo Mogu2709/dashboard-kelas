@@ -105,15 +105,19 @@ def dashboard_view(request):
     total_hadir = Attendance.objects.filter(user=request.user).count()
     persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
 
-    # Tugas aktif & materi untuk quick links di dashboard
+    # Tugas aktif & materi untuk quick links
     try:
         from tasks.models import Tugas, Materi
-        from django.utils import timezone
         tugas_aktif = Tugas.objects.filter(deadline__gt=timezone.now()).count()
         total_materi = Materi.objects.count()
     except Exception:
         tugas_aktif = 0
         total_materi = 0
+
+    # Pending users untuk alert di dashboard superuser
+    pending_users = []
+    if request.user.is_superuser:
+        pending_users = UserProfile.objects.filter(status='pending').select_related('user').order_by('dibuat_pada')
 
     context = {
         'total_pertemuan': total_pertemuan,
@@ -121,8 +125,10 @@ def dashboard_view(request):
         'persentase': persentase,
         'tugas_aktif': tugas_aktif,
         'total_materi': total_materi,
+        'pending_users': pending_users,
     }
     return render(request, 'dashboard.html', context)
+
 
 # ─── PROFIL ───────────────────────────────────────────────────────────────────
 
