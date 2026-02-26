@@ -139,13 +139,62 @@ def rekap_mahasiswa(request):
             if total_pertemuan > 0 else 0
         )
         data_rekap.append({
+            'user_id': mhs.id,
             'username': mhs.username,
             'nama_lengkap': mhs.get_full_name() or mhs.username,
             'total_hadir': mhs.total_hadir,
             'persentase': persen,
         })
 
-    # Sort descending persentase
+    # ── Data nilai per mahasiswa ──────────────────────────────────────────────
+    try:
+        from tasks.models import TugasSubmission, Tugas
+        from django.db.models import Avg, Count as DCount
+
+        # Ambil tugas sesuai filter MK
+        tugas_qs = Tugas.objects.all()
+        if mk_filter:
+            tugas_qs = tugas_qs.filter(mata_kuliah_id=mk_filter)
+        tugas_ids = list(tugas_qs.values_list('id', flat=True))
+        total_tugas = len(tugas_ids)
+
+        # Map user_id → stats nilai
+        nilai_map = {}
+        if tugas_ids:
+            subs = (
+                TugasSubmission.objects
+                .filter(tugas_id__in=tugas_ids)
+                .values('user_id')
+                .annotate(
+                    rata_nilai=Avg('nilai'),
+                    sudah_kumpul=DCount('id'),
+                    sudah_dinilai=DCount('nilai'),
+                )
+            )
+            for s in subs:
+                nilai_map[s['user_id']] = s
+    except Exception:
+        total_tugas = 0
+        nilai_map = {}
+
+    # Gabungkan data kehadiran + nilai
+    for item in data_rekap:
+        uid = item.get('user_id')
+        ndata = nilai_map.get(uid, {})
+        rata = ndata.get('rata_nilai')
+        item['rata_nilai']    = round(float(rata), 1) if rata is not None else None
+        item['sudah_kumpul']  = ndata.get('sudah_kumpul', 0)
+        item['sudah_dinilai'] = ndata.get('sudah_dinilai', 0)
+        item['total_tugas']   = total_tugas
+
+        # Grade huruf dari rata-rata
+        if rata is None:
+            item['grade'] = '-'
+        else:
+            n = float(rata)
+            item['grade'] = 'A' if n >= 85 else 'B' if n >= 75 else 'C' if n >= 65 else 'D' if n >= 55 else 'E'
+
+    # Sort descending persentase kehadiran
     data_rekap.sort(key=lambda x: x['persentase'], reverse=True)
 
     # Nama MK yang dipilih (untuk tampilan)
@@ -156,12 +205,20 @@ def rekap_mahasiswa(request):
         except MataKuliah.DoesNotExist:
             pass
 
+    # Summary stats
+    hadir_aman   = sum(1 for m in data_rekap if m['persentase'] >= 75)
+    ada_nilai    = [m for m in data_rekap if m['rata_nilai'] is not None]
+    rata_kelas   = round(sum(m['rata_nilai'] for m in ada_nilai) / len(ada_nilai), 1) if ada_nilai else None
+
     return render(request, 'rekap_mahasiswa.html', {
         'data_rekap': data_rekap,
         'total_pertemuan': total_pertemuan,
+        'total_tugas': total_tugas,
         'mata_kuliah_list': mata_kuliah_list,
         'mk_filter': mk_filter,
         'mk_dipilih': mk_dipilih,
+        'hadir_aman': hadir_aman,
+        'rata_kelas': rata_kelas,
     })
 
 

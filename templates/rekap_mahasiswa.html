@@ -4,69 +4,147 @@
 {% block content %}
 <div class="page-header fade">
     <span class="page-emoji">📊</span>
-    <h1 class="page-title">Rekap Kehadiran</h1>
-    <p class="page-subtitle">{{ total_pertemuan }} pertemuan · {{ data_rekap|length }} mahasiswa terdaftar</p>
+    <h1 class="page-title">Rekap Mahasiswa</h1>
+    <p class="page-subtitle">
+        {% if mk_dipilih %}{{ mk_dipilih.nama }} · {% endif %}
+        {{ total_pertemuan }} pertemuan · {{ total_tugas }} tugas · {{ data_rekap|length }} mahasiswa
+    </p>
 </div>
 
 <div class="page-content">
 
+    <!-- Filter MK -->
+    <div class="fade fade-1" style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <a href="{% url 'rekap_mahasiswa' %}"
+           class="btn {% if not mk_filter %}btn-primary{% else %}btn-secondary{% endif %}"
+           style="font-size:12px;padding:5px 12px;">Semua MK</a>
+        {% for mk in mata_kuliah_list %}
+        <a href="?mk={{ mk.id }}"
+           class="btn {% if mk_filter == mk.id|stringformat:'s' %}btn-primary{% else %}btn-secondary{% endif %}"
+           style="font-size:12px;padding:5px 12px;">{{ mk.nama }}</a>
+        {% endfor %}
+    </div>
+
     <!-- Summary cards -->
-    <div class="rekap-stat-grid fade fade-1" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
-        <div class="notion-card" style="padding:18px 20px;">
-            <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Mahasiswa</div>
-            <div style="font-family:'Lora',serif;font-size:30px;font-weight:600;color:var(--text);">{{ data_rekap|length }}</div>
+    <div class="rekap-stat-grid fade fade-2" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;">
+        <div class="notion-card" style="padding:16px 18px;">
+            <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Mahasiswa</div>
+            <div style="font-family:'Lora',serif;font-size:26px;font-weight:600;color:var(--text);">{{ data_rekap|length }}</div>
         </div>
-        <div class="notion-card" style="padding:18px 20px;">
-            <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Total Pertemuan</div>
-            <div style="font-family:'Lora',serif;font-size:30px;font-weight:600;color:var(--text);">{{ total_pertemuan }}</div>
+        <div class="notion-card" style="padding:16px 18px;">
+            <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Total Pertemuan</div>
+            <div style="font-family:'Lora',serif;font-size:26px;font-weight:600;color:var(--text);">{{ total_pertemuan }}</div>
         </div>
-        <div class="notion-card" style="padding:18px 20px;">
-            <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Kehadiran ≥ 75%</div>
-            <div style="font-family:'Lora',serif;font-size:30px;font-weight:600;color:#1a7f4b;">
-                {% with count=0 %}{% for m in data_rekap %}{% if m.persentase >= 75 %}{{ forloop.counter }}{% endif %}{% endfor %}{% endwith %}
+        <div class="notion-card" style="padding:16px 18px;">
+            <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Total Tugas</div>
+            <div style="font-family:'Lora',serif;font-size:26px;font-weight:600;color:var(--text);">{{ total_tugas }}</div>
+        </div>
+        <div class="notion-card" style="padding:16px 18px;">
+            <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Hadir ≥ 75%</div>
+            <div style="font-family:'Lora',serif;font-size:26px;font-weight:600;color:#1a7f4b;">{{ hadir_aman }}</div>
+        </div>
+        <div class="notion-card" style="padding:16px 18px;">
+            <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Rata-rata Nilai</div>
+            <div style="font-family:'Lora',serif;font-size:26px;font-weight:600;color:
+                {% if rata_kelas %}{% if rata_kelas >= 75 %}#1a7f4b{% elif rata_kelas >= 60 %}#d97706{% else %}#dc2626{% endif %}
+                {% else %}var(--text-tertiary){% endif %};">
+                {% if rata_kelas %}{{ rata_kelas }}{% else %}–{% endif %}
             </div>
         </div>
     </div>
 
     <!-- Desktop Table -->
-    <div class="notion-card fade fade-2 desktop-table" style="overflow:hidden;">
-        <div style="display:grid;grid-template-columns:2.5fr 1fr 2fr 1fr;gap:16px;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--bg-secondary);">
-            <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Mahasiswa</div>
-            <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Hadir</div>
-            <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Progress</div>
-            <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Status</div>
+    <div class="notion-card fade fade-3 desktop-table" style="overflow:hidden;">
+        <div style="display:grid;grid-template-columns:2.2fr 1.2fr 1.8fr 1.4fr 1.8fr 1fr;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--bg-secondary);">
+            <div style="font-size:10.5px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Mahasiswa</div>
+            <div style="font-size:10.5px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Kehadiran</div>
+            <div style="font-size:10.5px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Progress Hadir</div>
+            <div style="font-size:10.5px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Tugas</div>
+            <div style="font-size:10.5px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Rata-rata Nilai</div>
+            <div style="font-size:10.5px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Status</div>
         </div>
 
         {% for m in data_rekap %}
-        <div style="display:grid;grid-template-columns:2.5fr 1fr 2fr 1fr;gap:16px;padding:13px 20px;border-bottom:1px solid #f7f7f5;align-items:center;transition:background 0.1s;" onmouseover="this.style.background='#fafaf8'" onmouseout="this.style.background=''">
+        <div style="display:grid;grid-template-columns:2.2fr 1.2fr 1.8fr 1.4fr 1.8fr 1fr;gap:12px;padding:13px 20px;border-bottom:1px solid #f7f7f5;align-items:center;transition:background 0.1s;"
+             onmouseover="this.style.background='#fafaf8'" onmouseout="this.style.background=''">
+
+            <!-- Nama -->
             <div style="display:flex;align-items:center;gap:10px;">
                 <div style="width:28px;height:28px;background:var(--text);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:white;flex-shrink:0;">
                     {{ m.username|slice:":1"|upper }}
                 </div>
                 <div>
-                    <div style="font-size:13.5px;font-weight:500;color:var(--text);">
-                        {% if m.nama_lengkap %}{{ m.nama_lengkap }}{% else %}{{ m.username }}{% endif %}
-                    </div>
-                    {% if m.nama_lengkap %}
+                    <div style="font-size:13px;font-weight:500;color:var(--text);">{{ m.nama_lengkap }}</div>
+                    {% if m.nama_lengkap != m.username %}
                     <div style="font-size:11px;color:var(--text-tertiary);">@{{ m.username }}</div>
                     {% endif %}
                 </div>
             </div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-secondary);">
+
+            <!-- Kehadiran angka -->
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-secondary);">
                 {{ m.total_hadir }}<span style="color:var(--text-tertiary);">/{{ total_pertemuan }}</span>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;">
+
+            <!-- Progress bar kehadiran -->
+            <div style="display:flex;align-items:center;gap:8px;">
                 <div style="flex:1;background:var(--bg-secondary);border-radius:100px;height:6px;overflow:hidden;">
                     <div style="height:100%;border-radius:100px;width:{{ m.persentase }}%;background:
                         {% if m.persentase >= 75 %}#1a7f4b{% elif m.persentase >= 50 %}#d97706{% else %}#dc2626{% endif %};"></div>
                 </div>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;min-width:38px;text-align:right;color:
-                    {% if m.persentase >= 75 %}#1a7f4b{% elif m.persentase >= 50 %}#854d0e{% else %}#b91c1c{% endif %};">{{ m.persentase }}%</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;min-width:36px;text-align:right;color:
+                    {% if m.persentase >= 75 %}#1a7f4b{% elif m.persentase >= 50 %}#854d0e{% else %}#b91c1c{% endif %};">
+                    {{ m.persentase }}%
+                </span>
             </div>
+
+            <!-- Tugas dikumpulkan -->
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-secondary);">
+                {% if total_tugas > 0 %}
+                    {{ m.sudah_kumpul }}<span style="color:var(--text-tertiary);">/{{ total_tugas }}</span>
+                    <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:2px;">{{ m.sudah_dinilai }} dinilai</div>
+                {% else %}
+                    <span style="color:var(--text-tertiary);">–</span>
+                {% endif %}
+            </div>
+
+            <!-- Rata-rata nilai + grade -->
             <div>
-                {% if m.persentase >= 75 %}<span class="chip chip-green">Aman</span>
-                {% elif m.persentase >= 50 %}<span class="chip chip-yellow">Perhatian</span>
-                {% else %}<span class="chip chip-red">Bahaya</span>{% endif %}
+                {% if m.rata_nilai is not None %}
+                <div style="display:flex;align-items:center;gap:7px;">
+                    <div style="flex:1;background:var(--bg-secondary);border-radius:100px;height:6px;overflow:hidden;">
+                        <div style="height:100%;border-radius:100px;width:{{ m.rata_nilai }}%;background:
+                            {% if m.rata_nilai >= 75 %}#1a7f4b{% elif m.rata_nilai >= 60 %}#d97706{% else %}#dc2626{% endif %};"></div>
+                    </div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;min-width:30px;text-align:right;color:
+                        {% if m.rata_nilai >= 75 %}#1a7f4b{% elif m.rata_nilai >= 60 %}#854d0e{% else %}#b91c1c{% endif %};">
+                        {{ m.rata_nilai }}
+                    </span>
+                    <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:5px;
+                        {% if m.grade == 'A' %}background:#dcfce7;color:#166534;
+                        {% elif m.grade == 'B' %}background:#dbeafe;color:#1e40af;
+                        {% elif m.grade == 'C' %}background:#fef9c3;color:#854d0e;
+                        {% elif m.grade == 'D' %}background:#ffedd5;color:#9a3412;
+                        {% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                        {{ m.grade }}
+                    </span>
+                </div>
+                {% else %}
+                <span style="font-size:12px;color:var(--text-tertiary);font-style:italic;">Belum dinilai</span>
+                {% endif %}
+            </div>
+
+            <!-- Status gabungan kehadiran + nilai -->
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                {% if m.persentase >= 75 %}<span class="chip chip-green" style="font-size:10.5px;">Hadir ✓</span>
+                {% elif m.persentase >= 50 %}<span class="chip chip-yellow" style="font-size:10.5px;">Hadir ⚠</span>
+                {% else %}<span class="chip chip-red" style="font-size:10.5px;">Absen ✗</span>{% endif %}
+
+                {% if m.rata_nilai is not None %}
+                    {% if m.rata_nilai >= 75 %}<span class="chip chip-green" style="font-size:10.5px;">Nilai ✓</span>
+                    {% elif m.rata_nilai >= 60 %}<span class="chip chip-yellow" style="font-size:10.5px;">Nilai ⚠</span>
+                    {% else %}<span class="chip chip-red" style="font-size:10.5px;">Nilai ✗</span>{% endif %}
+                {% endif %}
             </div>
         </div>
         {% empty %}
@@ -78,7 +156,7 @@
     </div>
 
     <!-- Mobile cards -->
-    <div class="mobile-cards fade fade-2">
+    <div class="mobile-cards fade fade-3">
         {% for m in data_rekap %}
         <div class="notion-card" style="padding:16px;margin-bottom:10px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -87,44 +165,85 @@
                         {{ m.username|slice:":1"|upper }}
                     </div>
                     <div>
-                        <div style="font-size:13.5px;font-weight:500;color:var(--text);">{% if m.nama_lengkap %}{{ m.nama_lengkap }}{% else %}{{ m.username }}{% endif %}</div>
-                        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-tertiary);">{{ m.total_hadir }}/{{ total_pertemuan }} hadir</div>
+                        <div style="font-size:13px;font-weight:500;color:var(--text);">{{ m.nama_lengkap }}</div>
+                        <div style="font-size:11px;color:var(--text-tertiary);">@{{ m.username }}</div>
                     </div>
                 </div>
-                {% if m.persentase >= 75 %}<span class="chip chip-green">Aman</span>
-                {% elif m.persentase >= 50 %}<span class="chip chip-yellow">Perhatian</span>
-                {% else %}<span class="chip chip-red">Bahaya</span>{% endif %}
+                <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
+                    {% if m.persentase >= 75 %}<span class="chip chip-green" style="font-size:10.5px;">Hadir ✓</span>
+                    {% elif m.persentase >= 50 %}<span class="chip chip-yellow" style="font-size:10.5px;">Hadir ⚠</span>
+                    {% else %}<span class="chip chip-red" style="font-size:10.5px;">Absen ✗</span>{% endif %}
+                    {% if m.rata_nilai is not None %}
+                        {% if m.rata_nilai >= 75 %}<span class="chip chip-green" style="font-size:10.5px;">Nilai ✓</span>
+                        {% elif m.rata_nilai >= 60 %}<span class="chip chip-yellow" style="font-size:10.5px;">Nilai ⚠</span>
+                        {% else %}<span class="chip chip-red" style="font-size:10.5px;">Nilai ✗</span>{% endif %}
+                    {% endif %}
+                </div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-                <div style="flex:1;background:var(--bg-secondary);border-radius:100px;height:6px;overflow:hidden;">
+
+            <!-- Progress kehadiran -->
+            <div style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-tertiary);margin-bottom:4px;">
+                    <span>Kehadiran</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:
+                        {% if m.persentase >= 75 %}#1a7f4b{% elif m.persentase >= 50 %}#854d0e{% else %}#b91c1c{% endif %};">
+                        {{ m.total_hadir }}/{{ total_pertemuan }} · {{ m.persentase }}%
+                    </span>
+                </div>
+                <div style="background:var(--bg-secondary);border-radius:100px;height:5px;overflow:hidden;">
                     <div style="height:100%;border-radius:100px;width:{{ m.persentase }}%;background:
                         {% if m.persentase >= 75 %}#1a7f4b{% elif m.persentase >= 50 %}#d97706{% else %}#dc2626{% endif %};"></div>
                 </div>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:
-                    {% if m.persentase >= 75 %}#1a7f4b{% elif m.persentase >= 50 %}#854d0e{% else %}#b91c1c{% endif %};">{{ m.persentase }}%</span>
             </div>
+
+            <!-- Progress nilai -->
+            {% if total_tugas > 0 %}
+            <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-tertiary);margin-bottom:4px;">
+                    <span>Tugas ({{ m.sudah_kumpul }}/{{ total_tugas }} kumpul · {{ m.sudah_dinilai }} dinilai)</span>
+                    {% if m.rata_nilai is not None %}
+                    <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:
+                        {% if m.rata_nilai >= 75 %}#1a7f4b{% elif m.rata_nilai >= 60 %}#854d0e{% else %}#b91c1c{% endif %};">
+                        {{ m.rata_nilai }} ({{ m.grade }})
+                    </span>
+                    {% else %}
+                    <span style="font-style:italic;">–</span>
+                    {% endif %}
+                </div>
+                {% if m.rata_nilai is not None %}
+                <div style="background:var(--bg-secondary);border-radius:100px;height:5px;overflow:hidden;">
+                    <div style="height:100%;border-radius:100px;width:{{ m.rata_nilai }}%;background:
+                        {% if m.rata_nilai >= 75 %}#1a7f4b{% elif m.rata_nilai >= 60 %}#d97706{% else %}#dc2626{% endif %};"></div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
         {% empty %}
         <div class="notion-card" style="padding:48px;text-align:center;color:var(--text-secondary);font-size:13px;">Belum ada data</div>
         {% endfor %}
     </div>
 
+    <!-- Action buttons -->
     <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;">
         <a href="{% url 'pertemuan_list' %}" class="btn btn-secondary">← Kembali</a>
-        <a href="{% url 'export_excel' %}" class="btn btn-secondary">📊 Export Excel</a>
-        <a href="{% url 'export_pdf' %}" class="btn btn-primary">📄 Export PDF</a>
+        <a href="{% url 'export_excel' %}{% if mk_filter %}?mk={{ mk_filter }}{% endif %}" class="btn btn-secondary">📊 Export Excel</a>
+        <a href="{% url 'export_pdf' %}{% if mk_filter %}?mk={{ mk_filter }}{% endif %}" class="btn btn-primary">📄 Export PDF</a>
     </div>
 
 </div>
 
 <style>
 .mobile-cards { display: none; }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .desktop-table { display: none !important; }
     .mobile-cards { display: block; }
+    .rekap-stat-grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (max-width: 540px) {
     .rekap-stat-grid { grid-template-columns: 1fr 1fr !important; }
 }
-@media (max-width: 480px) {
+@media (max-width: 360px) {
     .rekap-stat-grid { grid-template-columns: 1fr !important; }
 }
 </style>
