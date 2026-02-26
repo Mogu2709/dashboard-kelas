@@ -223,6 +223,7 @@ def dashboard_view(request):
         # ══════════════════════════════════════════════════════════════════════
         from attendance.models import Pertemuan, Attendance
         from tasks.models import Tugas, Materi, Notifikasi
+        from django.utils import timezone
 
         total_pertemuan = Pertemuan.objects.count()
         total_hadir = Attendance.objects.filter(user=request.user).count()
