@@ -3,6 +3,13 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import os
 
+# Custom storage untuk file non-media (docx, xlsx, zip, dll)
+try:
+    from cloudinary_storage.storage import RawMediaCloudinaryStorage
+    raw_storage = RawMediaCloudinaryStorage()
+except Exception:
+    raw_storage = None  # Fallback ke default storage
+
 
 def tugas_soal_upload_path(instance, filename):
     return f'tugas/{instance.mata_kuliah.id}/soal/{filename}'
@@ -24,7 +31,11 @@ class Tugas(models.Model):
     dibuat_oleh  = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tugas_dibuat')
     dibuat_pada  = models.DateTimeField(auto_now_add=True)
     diedit_pada  = models.DateTimeField(null=True, blank=True)
-    file_soal    = models.FileField(upload_to=tugas_soal_upload_path, blank=True, null=True)
+    file_soal    = models.FileField(
+        upload_to=tugas_soal_upload_path,
+        blank=True, null=True,
+        storage=raw_storage
+    )
     nama_file_soal = models.CharField(max_length=255, blank=True)
 
     class Meta:
@@ -61,10 +72,13 @@ class Tugas(models.Model):
 class TugasSubmission(models.Model):
     tugas         = models.ForeignKey(Tugas, on_delete=models.CASCADE, related_name='submissions')
     user          = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions')
-    file_jawaban  = models.FileField(upload_to=tugas_submission_upload_path)
+    file_jawaban  = models.FileField(
+        upload_to=tugas_submission_upload_path,
+        storage=raw_storage
+    )
     nama_file     = models.CharField(max_length=255, blank=True)
     ukuran        = models.PositiveBigIntegerField(default=0)
-    catatan       = models.TextField(blank=True, help_text='Catatan opsional dari mahasiswa')
+    catatan       = models.TextField(blank=True)
     dikumpulkan_pada = models.DateTimeField(auto_now_add=True)
     diperbarui_pada  = models.DateTimeField(auto_now=True)
 
@@ -103,7 +117,11 @@ class Materi(models.Model):
     mata_kuliah  = models.ForeignKey('attendance.MataKuliah', on_delete=models.CASCADE, related_name='materi')
     judul        = models.CharField(max_length=200)
     deskripsi    = models.TextField(blank=True)
-    file         = models.FileField(upload_to=materi_upload_path, blank=True, null=True)
+    file         = models.FileField(
+        upload_to=materi_upload_path,
+        blank=True, null=True,
+        storage=raw_storage
+    )
     nama_file    = models.CharField(max_length=255, blank=True)
     ukuran       = models.PositiveBigIntegerField(default=0)
     diunggah_oleh = models.ForeignKey(User, on_delete=models.CASCADE, related_name='materi_diunggah')
