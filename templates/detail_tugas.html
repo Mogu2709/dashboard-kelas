@@ -244,7 +244,15 @@
                 {% endif %}
                 {% endif %}
 
-                <!-- Form Upload (jika belum expire atau sudah submit bisa revisi) -->
+                <!-- Form Upload & Hapus — disembunyikan jika sudah dinilai -->
+                {% if submission.nilai is not None %}
+                <!-- Sudah dinilai: tampilkan info terkunci -->
+                <div style="text-align:center;padding:12px 0 4px;">
+                    <div style="font-size:12.5px;color:var(--text-tertiary);">🔒 Submission sudah dinilai dan tidak dapat diubah.</div>
+                </div>
+
+                {% else %}
+                <!-- Belum dinilai: tampilkan form edit & hapus normal -->
                 {% if not tugas.is_expired or submission %}
                 <h3 style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;">
                     {% if submission %}🔄 Ganti File Jawaban{% else %}📤 Kumpulkan Tugas{% endif %}
@@ -293,6 +301,7 @@
                     </button>
                 </form>
                 {% endif %}
+                {% endif %}{# end nilai is None #}
 
             </div>
         </div>

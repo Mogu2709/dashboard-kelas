@@ -162,6 +162,10 @@ def detail_tugas(request, pk):
             if tugas.is_expired and not submission:
                 messages.error(request, 'Deadline sudah lewat.')
                 return redirect('detail_tugas', pk=pk)
+            # Block edit jika submission sudah dinilai
+            if submission and submission.nilai is not None:
+                messages.error(request, '🔒 Submission sudah dinilai dan tidak dapat diubah.')
+                return redirect('detail_tugas', pk=pk)
             form = (
                 TugasSubmissionForm(request.POST, request.FILES, instance=submission)
                 if submission
@@ -249,6 +253,10 @@ def hapus_submission(request, pk):
     submission = get_object_or_404(TugasSubmission, pk=pk)
     if submission.user != request.user and not request.user.is_superuser:
         return redirect('tugas_list')
+    # Block hapus jika sudah dinilai
+    if submission.nilai is not None and not request.user.is_superuser:
+        messages.error(request, '🔒 Submission sudah dinilai dan tidak dapat dihapus.')
+        return redirect('detail_tugas', pk=submission.tugas.pk)
     tugas_pk = submission.tugas.pk
     submission.delete()
     messages.success(request, '🗑️ Submission berhasil dihapus.')
