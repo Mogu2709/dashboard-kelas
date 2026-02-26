@@ -405,10 +405,6 @@
                 <a href="{% url 'profil' %}" class="dropdown-item">
                     <span style="font-size:14px;">👤</span> Profil Saya
                 </a>
-                <a href="{% url 'pengumuman_list' %}" class="dropdown-item">
-                    <span style="font-size:14px;">🔔</span> Pengumuman
-                    <span id="notif-count-dd" style="display:none;margin-left:auto;background:#e03e3e;color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:100px;line-height:14px;"></span>
-                </a>
                 <div class="dropdown-divider"></div>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
