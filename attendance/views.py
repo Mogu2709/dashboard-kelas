@@ -168,6 +168,17 @@ def buat_pengumuman(request):
                 pinned=pinned, embed_url=embed_url,
                 dibuat_oleh=request.user,
             )
+            try:
+                from tasks.views import _kirim_notif_semua
+                _kirim_notif_semua(
+                    tipe='pengumuman',
+                    judul=f'Pengumuman: {judul}',
+                    pesan=isi[:100],
+                    url='/absensi/pengumuman/',
+                    exclude_user=request.user
+                )
+            except Exception:
+                pass
             for f in files:
                 tipe = get_attachment_tipe(f)
                 att = PengumumanAttachment(pengumuman=p, tipe=tipe, nama_asli=f.name)

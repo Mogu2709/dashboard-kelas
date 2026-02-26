@@ -2,6 +2,11 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Notifikasi API
+    path('notif/', views.notif_list_api, name='notif_list_api'),
+    path('notif/baca-semua/', views.notif_baca_semua, name='notif_baca_semua'),
+    path('notif/<int:pk>/baca/', views.notif_baca, name='notif_baca'),
+
     # Tugas
     path('', views.tugas_list, name='tugas_list'),
     path('buat/', views.buat_tugas, name='buat_tugas'),

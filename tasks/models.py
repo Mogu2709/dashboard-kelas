@@ -3,39 +3,32 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import os
 
-# Custom storage untuk file non-media (docx, xlsx, zip, dll)
 try:
     from cloudinary_storage.storage import RawMediaCloudinaryStorage
     raw_storage = RawMediaCloudinaryStorage()
 except Exception:
-    raw_storage = None  # Fallback ke default storage
+    raw_storage = None
 
 
 def tugas_soal_upload_path(instance, filename):
     return f'tugas/{instance.mata_kuliah.id}/soal/{filename}'
 
-
 def tugas_submission_upload_path(instance, filename):
     return f'tugas/{instance.tugas.id}/jawaban/{instance.user.username}/{filename}'
-
 
 def materi_upload_path(instance, filename):
     return f'materi/{instance.mata_kuliah.id}/{filename}'
 
 
 class Tugas(models.Model):
-    mata_kuliah  = models.ForeignKey('attendance.MataKuliah', on_delete=models.CASCADE, related_name='tugas')
-    judul        = models.CharField(max_length=200)
-    deskripsi    = models.TextField(blank=True)
-    deadline     = models.DateTimeField()
-    dibuat_oleh  = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tugas_dibuat')
-    dibuat_pada  = models.DateTimeField(auto_now_add=True)
-    diedit_pada  = models.DateTimeField(null=True, blank=True)
-    file_soal    = models.FileField(
-        upload_to=tugas_soal_upload_path,
-        blank=True, null=True,
-        storage=raw_storage
-    )
+    mata_kuliah    = models.ForeignKey('attendance.MataKuliah', on_delete=models.CASCADE, related_name='tugas')
+    judul          = models.CharField(max_length=200)
+    deskripsi      = models.TextField(blank=True)
+    deadline       = models.DateTimeField()
+    dibuat_oleh    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tugas_dibuat')
+    dibuat_pada    = models.DateTimeField(auto_now_add=True)
+    diedit_pada    = models.DateTimeField(null=True, blank=True)
+    file_soal      = models.FileField(upload_to=tugas_soal_upload_path, blank=True, null=True, storage=raw_storage)
     nama_file_soal = models.CharField(max_length=255, blank=True)
 
     class Meta:
@@ -70,15 +63,12 @@ class Tugas(models.Model):
 
 
 class TugasSubmission(models.Model):
-    tugas         = models.ForeignKey(Tugas, on_delete=models.CASCADE, related_name='submissions')
-    user          = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions')
-    file_jawaban  = models.FileField(
-        upload_to=tugas_submission_upload_path,
-        storage=raw_storage
-    )
-    nama_file     = models.CharField(max_length=255, blank=True)
-    ukuran        = models.PositiveBigIntegerField(default=0)
-    catatan       = models.TextField(blank=True)
+    tugas            = models.ForeignKey(Tugas, on_delete=models.CASCADE, related_name='submissions')
+    user             = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions')
+    file_jawaban     = models.FileField(upload_to=tugas_submission_upload_path, storage=raw_storage)
+    nama_file        = models.CharField(max_length=255, blank=True)
+    ukuran           = models.PositiveBigIntegerField(default=0)
+    catatan          = models.TextField(blank=True)
     dikumpulkan_pada = models.DateTimeField(auto_now_add=True)
     diperbarui_pada  = models.DateTimeField(auto_now=True)
 
@@ -114,16 +104,12 @@ class TugasSubmission(models.Model):
 
 
 class Materi(models.Model):
-    mata_kuliah  = models.ForeignKey('attendance.MataKuliah', on_delete=models.CASCADE, related_name='materi')
-    judul        = models.CharField(max_length=200)
-    deskripsi    = models.TextField(blank=True)
-    file         = models.FileField(
-        upload_to=materi_upload_path,
-        blank=True, null=True,
-        storage=raw_storage
-    )
-    nama_file    = models.CharField(max_length=255, blank=True)
-    ukuran       = models.PositiveBigIntegerField(default=0)
+    mata_kuliah   = models.ForeignKey('attendance.MataKuliah', on_delete=models.CASCADE, related_name='materi')
+    judul         = models.CharField(max_length=200)
+    deskripsi     = models.TextField(blank=True)
+    file          = models.FileField(upload_to=materi_upload_path, blank=True, null=True, storage=raw_storage)
+    nama_file     = models.CharField(max_length=255, blank=True)
+    ukuran        = models.PositiveBigIntegerField(default=0)
     diunggah_oleh = models.ForeignKey(User, on_delete=models.CASCADE, related_name='materi_diunggah')
     diunggah_pada = models.DateTimeField(auto_now_add=True)
     diedit_pada   = models.DateTimeField(null=True, blank=True)
@@ -158,3 +144,47 @@ class Materi(models.Model):
             except Exception:
                 pass
         super().save(*args, **kwargs)
+
+
+# ─── NOTIFIKASI ───────────────────────────────────────────────────────────────
+
+class Notifikasi(models.Model):
+    TIPE_CHOICES = [
+        ('tugas_baru', 'Tugas Baru'),
+        ('materi_baru', 'Materi Baru'),
+        ('deadline', 'Deadline Mendekat'),
+        ('pengumuman', 'Pengumuman Baru'),
+    ]
+
+    user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifikasi')
+    tipe        = models.CharField(max_length=20, choices=TIPE_CHOICES)
+    judul       = models.CharField(max_length=200)
+    pesan       = models.TextField(blank=True)
+    url         = models.CharField(max_length=300, blank=True)
+    dibaca      = models.BooleanField(default=False)
+    dibuat_pada = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-dibuat_pada']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.tipe}: {self.judul}"
+
+    @property
+    def icon(self):
+        return {'tugas_baru': '📝', 'materi_baru': '📚', 'deadline': '⏰', 'pengumuman': '🔔'}.get(self.tipe, '🔔')
+
+    @property
+    def waktu_relatif(self):
+        delta = timezone.now() - self.dibuat_pada
+        total_seconds = int(delta.total_seconds())
+        if total_seconds < 60:
+            return "baru saja"
+        elif total_seconds < 3600:
+            return f"{total_seconds // 60} menit lalu"
+        elif delta.days == 0:
+            return f"{total_seconds // 3600} jam lalu"
+        elif delta.days == 1:
+            return "kemarin"
+        else:
+            return f"{delta.days} hari lalu"

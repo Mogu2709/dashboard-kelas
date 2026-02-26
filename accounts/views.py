@@ -103,20 +103,26 @@ def dashboard_view(request):
 
     total_pertemuan = Pertemuan.objects.count()
     total_hadir = Attendance.objects.filter(user=request.user).count()
+    persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
 
-    if total_pertemuan > 0:
-        persentase = (total_hadir / total_pertemuan) * 100
-    else:
-        persentase = 0
+    # Tugas aktif & materi untuk quick links di dashboard
+    try:
+        from tasks.models import Tugas, Materi
+        from django.utils import timezone
+        tugas_aktif = Tugas.objects.filter(deadline__gt=timezone.now()).count()
+        total_materi = Materi.objects.count()
+    except Exception:
+        tugas_aktif = 0
+        total_materi = 0
 
     context = {
         'total_pertemuan': total_pertemuan,
         'total_hadir': total_hadir,
-        'persentase': round(persentase, 1),
+        'persentase': persentase,
+        'tugas_aktif': tugas_aktif,
+        'total_materi': total_materi,
     }
-
     return render(request, 'dashboard.html', context)
-
 
 # ─── PROFIL ───────────────────────────────────────────────────────────────────
 
