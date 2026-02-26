@@ -5,9 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
+from django.db.models import Count
 from django import forms
 
-from attendance.models import Pertemuan, Attendance
+from attendance.models import MataKuliah, Pertemuan, Attendance
 from .models import UserProfile
 
 
