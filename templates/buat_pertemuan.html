@@ -16,30 +16,56 @@
 
             {% for field in form %}
             <div style="margin-bottom:20px;">
-                <label style="display:block;font-size:12.5px;font-weight:500;color:#6b6b6b;margin-bottom:6px;">{{ field.label }}</label>
-                {% if field.field.widget.input_type == 'select' %}
-                <select name="{{ field.html_name }}" style="width:100%;border:1px solid #e9e9e7;border-radius:6px;padding:8px 12px;font-size:14px;color:#1a1a1a;background:#fff;outline:none;font-family:'Geist',sans-serif;cursor:pointer;transition:border-color 0.15s;" onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#e9e9e7'">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">{{ field.label }}</label>
+
+                {% if field.html_name == 'mata_kuliah' %}
+                {# Select matkul — pakai id khusus untuk JS #}
+                <select name="{{ field.html_name }}" id="id_mata_kuliah"
+                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;cursor:pointer;transition:border-color 0.15s;"
+                    onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='var(--border)'">
                     {% for val, label in field.field.choices %}
                     <option value="{{ val }}" {% if field.value == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
+
+                {% elif field.field.widget.input_type == 'select' %}
+                <select name="{{ field.html_name }}"
+                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;cursor:pointer;transition:border-color 0.15s;"
+                    onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='var(--border)'">
+                    {% for val, label in field.field.choices %}
+                    <option value="{{ val }}" {% if field.value == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+
                 {% else %}
                 <input
                     type="{{ field.field.widget.input_type }}"
                     name="{{ field.html_name }}"
-                    style="width:100%;border:1px solid #e9e9e7;border-radius:6px;padding:8px 12px;font-size:14px;color:#1a1a1a;background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
+                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
                     {% if field.value %}value="{{ field.value }}"{% endif %}
-                    onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 2px rgba(26,26,26,0.08)'"
-                    onblur="this.style.borderColor='#e9e9e7';this.style.boxShadow='none'"
+                    onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
+                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
                 >
                 {% endif %}
+
                 {% if field.errors %}
                 <div style="font-size:12px;color:#e03e3e;margin-top:4px;">{{ field.errors|join:", " }}</div>
                 {% endif %}
             </div>
+
+            {# Setelah field mata_kuliah, tampilkan semester otomatis #}
+            {% if field.html_name == 'mata_kuliah' %}
+            <div style="margin-bottom:20px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Semester</label>
+                <div id="semester-display" style="padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:var(--bg-secondary);color:var(--text-secondary);min-height:38px;">
+                    — pilih mata kuliah dulu
+                </div>
+            </div>
+            {% endif %}
+
             {% endfor %}
 
-            <div style="display:flex;gap:10px;align-items:center;margin-top:8px;padding-top:20px;border-top:1px solid #f7f7f5;">
+            <div style="display:flex;gap:10px;align-items:center;margin-top:8px;padding-top:20px;border-top:1px solid var(--border);">
                 <button type="submit" class="btn btn-primary">Simpan Pertemuan</button>
                 <a href="{% url 'pertemuan_list' %}" class="btn btn-secondary">Batal</a>
             </div>
@@ -47,4 +73,30 @@
     </div>
 </div>
 </div>
+
+{# Data semester per matkul untuk JS #}
+<script>
+const matkulSemester = {
+    {% for mk in mata_kuliah_list %}
+    "{{ mk.id }}": "Semester {{ mk.semester }}",
+    {% endfor %}
+};
+
+function updateSemester() {
+    const select = document.getElementById('id_mata_kuliah');
+    const display = document.getElementById('semester-display');
+    const val = select.value;
+    if (val && matkulSemester[val]) {
+        display.textContent = matkulSemester[val];
+        display.style.color = 'var(--text)';
+    } else {
+        display.textContent = '— pilih mata kuliah dulu';
+        display.style.color = 'var(--text-secondary)';
+    }
+}
+
+document.getElementById('id_mata_kuliah').addEventListener('change', updateSemester);
+// Jalankan saat load kalau sudah ada nilai terpilih
+document.addEventListener('DOMContentLoaded', updateSemester);
+</script>
 {% endblock %}

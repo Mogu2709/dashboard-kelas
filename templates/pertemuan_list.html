@@ -13,7 +13,23 @@
     <!-- Toolbar -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap;" class="fade fade-1">
         <form method="get" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <select name="mata_kuliah" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:13px;color:var(--text);background:var(--bg);outline:none;font-family:'Geist',sans-serif;cursor:pointer;transition:border-color 0.1s;" onfocus="this.style.borderColor='var(--text)'" onblur="this.style.borderColor='var(--border)'">
+
+            <!-- Filter Semester -->
+            <select name="semester"
+                style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:13px;color:var(--text);background:var(--bg);outline:none;font-family:'Geist',sans-serif;cursor:pointer;"
+                onchange="this.form.submit()">
+                <option value="">Semua Semester</option>
+                {% for sem in semester_list %}
+                <option value="{{ sem }}" {% if request.GET.semester == sem|stringformat:"s" %}selected{% endif %}>
+                    Semester {{ sem }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <!-- Filter Mata Kuliah -->
+            <select name="mata_kuliah"
+                style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:13px;color:var(--text);background:var(--bg);outline:none;font-family:'Geist',sans-serif;cursor:pointer;"
+                onchange="this.form.submit()">
                 <option value="">Semua Mata Kuliah</option>
                 {% for mk in mata_kuliah_list %}
                 <option value="{{ mk.id }}" {% if request.GET.mata_kuliah == mk.id|stringformat:"s" %}selected{% endif %}>
@@ -21,15 +37,32 @@
                 </option>
                 {% endfor %}
             </select>
-            <button type="submit" class="btn btn-secondary" style="padding:6px 12px;">Filter</button>
-            {% if request.GET.mata_kuliah %}
-            <a href="/absensi/" style="font-size:13px;color:var(--text-secondary);text-decoration:none;padding:6px 4px;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-secondary)'">✕ Reset</a>
+
+            {% if request.GET.semester or request.GET.mata_kuliah %}
+            <a href="/absensi/" style="font-size:13px;color:var(--text-secondary);text-decoration:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-secondary)'">✕ Reset</a>
             {% endif %}
         </form>
+
         {% if user.is_superuser %}
         <a href="{% url 'buat_pertemuan' %}" class="btn btn-primary">＋ Buat Pertemuan</a>
         {% endif %}
     </div>
+
+    <!-- Info filter aktif -->
+    {% if request.GET.semester or request.GET.mata_kuliah %}
+    <div class="fade" style="margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text-tertiary);">Filter aktif:</span>
+        {% if request.GET.semester %}
+        <span style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:100px;padding:2px 10px;font-size:12px;color:var(--text-secondary);">📚 Semester {{ request.GET.semester }}</span>
+        {% endif %}
+        {% if request.GET.mata_kuliah %}
+        {% for mk in mata_kuliah_list %}{% if mk.id|stringformat:"s" == request.GET.mata_kuliah %}
+        <span style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:100px;padding:2px 10px;font-size:12px;color:var(--text-secondary);">📖 {{ mk.nama }}</span>
+        {% endif %}{% endfor %}
+        {% endif %}
+        <span style="font-size:12px;color:var(--text-tertiary);">· {{ pertemuan_list|length }} pertemuan</span>
+    </div>
+    {% endif %}
 
     <!-- Desktop table -->
     <div class="notion-card fade fade-2 desktop-table" style="overflow:hidden;">
@@ -51,8 +84,9 @@
                 {% else %}
                 <span style="font-size:13.5px;font-weight:500;color:var(--text);">{{ p.mata_kuliah.nama }} — {{ p.judul }}</span>
                 {% endif %}
+                <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;font-family:'IBM Plex Mono',monospace;">Sem {{ p.mata_kuliah.semester }}</div>
                 {% if now < p.batas_absen and p.id not in hadir_ids %}
-                <div class="countdown font-mono" data-deadline="{{ p.batas_absen|date:'c' }}" style="font-size:11px;color:var(--text-tertiary);margin-top:3px;">⏱ <span class="time-left"></span></div>
+                <div class="countdown font-mono" data-deadline="{{ p.batas_absen|date:'c' }}" style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">⏱ <span class="time-left"></span></div>
                 {% endif %}
             </div>
             <div style="font-size:12.5px;color:var(--text-secondary);font-family:'IBM Plex Mono',monospace;">{{ p.tanggal }}</div>
@@ -71,8 +105,10 @@
         {% empty %}
         <div style="padding:56px;text-align:center;">
             <div style="font-size:30px;margin-bottom:10px;">📭</div>
-            <div style="font-size:14px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;">Belum ada pertemuan</div>
-            <div style="font-size:13px;color:var(--text-tertiary);">Pertemuan akan muncul setelah dibuat ketua kelas</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;">Tidak ada pertemuan</div>
+            <div style="font-size:13px;color:var(--text-tertiary);">
+                {% if request.GET.semester or request.GET.mata_kuliah %}Coba ubah atau reset filter{% else %}Pertemuan akan muncul setelah dibuat ketua kelas{% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -88,6 +124,7 @@
                     {% else %}
                     <div style="font-size:13.5px;font-weight:500;color:var(--text);">{{ p.mata_kuliah.nama }} — {{ p.judul }}</div>
                     {% endif %}
+                    <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;font-family:'IBM Plex Mono',monospace;">Sem {{ p.mata_kuliah.semester }}</div>
                 </div>
                 {% if p.id in hadir_ids %}<span class="chip chip-green">✓ Hadir</span>
                 {% elif now < p.batas_absen %}<span class="chip chip-blue">● Buka</span>
@@ -109,7 +146,9 @@
         {% empty %}
         <div class="notion-card" style="padding:48px;text-align:center;">
             <div style="font-size:28px;margin-bottom:8px;">📭</div>
-            <div style="font-size:13px;color:var(--text-secondary);">Belum ada pertemuan</div>
+            <div style="font-size:13px;color:var(--text-secondary);">
+                {% if request.GET.semester or request.GET.mata_kuliah %}Tidak ada pertemuan untuk filter ini{% else %}Belum ada pertemuan{% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>

@@ -233,3 +233,31 @@ def hapus_user_view(request, user_id):
         user = get_object_or_404(User, id=user_id, is_superuser=False)
         user.delete()
     return redirect('kelola_user')
+
+@login_required
+def pertemuan_list(request):
+    mata_kuliah_id = request.GET.get('mata_kuliah')
+    semester = request.GET.get('semester')
+
+    pertemuan = Pertemuan.objects.all().order_by('-tanggal')
+    mata_kuliah_list = MataKuliah.objects.all().order_by('semester', 'nama')
+
+    # Ambil daftar semester unik untuk filter dropdown
+    semester_list = MataKuliah.objects.values_list('semester', flat=True).distinct().order_by('semester')
+
+    if mata_kuliah_id:
+        pertemuan = pertemuan.filter(mata_kuliah_id=mata_kuliah_id)
+    if semester:
+        pertemuan = pertemuan.filter(mata_kuliah__semester=semester)
+
+    pertemuan = pertemuan.annotate(jumlah_hadir=Count('attendance'))
+    hadir_ids = Attendance.objects.filter(
+        user=request.user).values_list('pertemuan_id', flat=True)
+
+    return render(request, 'pertemuan_list.html', {
+        'pertemuan_list': pertemuan,
+        'mata_kuliah_list': mata_kuliah_list,
+        'semester_list': semester_list,
+        'hadir_ids': hadir_ids,
+        'now': timezone.now(),
+    })
