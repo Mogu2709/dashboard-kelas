@@ -23,6 +23,8 @@ class RegisterForm(UserCreationForm):
 
 def check_user_approved(user):
     if user.is_superuser:
+        # Pastikan superuser punya profile (agar template tidak error)
+        UserProfile.objects.get_or_create(user=user, defaults={'status': 'approved'})
         return True
     try:
         return user.profile.status == 'approved'
@@ -74,6 +76,8 @@ def login_view(request):
         if user is not None:
             if user.is_superuser:
                 login(request, user)
+                # Pastikan superuser punya profile
+                UserProfile.objects.get_or_create(user=user, defaults={'status': 'approved'})
                 return redirect('dashboard')
 
             try:
@@ -376,14 +380,6 @@ def _simpan_profil(request, profile):
     profile.jenis_kelamin = request.POST.get('jenis_kelamin', '')
     angkatan = request.POST.get('angkatan', '').strip()
     profile.angkatan      = int(angkatan) if angkatan.isdigit() else None
-
-    # FITUR BARU: simpan no_hp dan bio kalau ada di model
-    no_hp = request.POST.get('no_hp', '').strip()
-    bio   = request.POST.get('bio', '').strip()
-    if hasattr(profile, 'no_hp'):
-        profile.no_hp = no_hp
-    if hasattr(profile, 'bio'):
-        profile.bio = bio
 
     profile.save()
 

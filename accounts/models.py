@@ -33,6 +33,7 @@ class UserProfile(models.Model):
         max_length=1, choices=JENIS_KELAMIN_CHOICES, blank=True
     )
 
+
     def __str__(self):
         return f"{self.user.username} - {self.status}"
 

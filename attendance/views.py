@@ -167,7 +167,8 @@ def rekap_mahasiswa(request):
     pertemuan_ids = list(pertemuan_qs.values_list('id', flat=True))
 
     # FIX: Hanya hitung kehadiran di pertemuan yang terfilter
-    mahasiswa = User.objects.filter(is_superuser=False).annotate(
+    # FIX: Hanya mahasiswa yang sudah approved
+    mahasiswa = User.objects.filter(is_superuser=False, profile__status='approved').annotate(
         total_hadir=Count(
             'attendance',
             filter=Q(attendance__pertemuan_id__in=pertemuan_ids)
@@ -324,6 +325,11 @@ def buat_pengumuman(request):
         pinned    = request.POST.get('pinned') == 'on'
         embed_url = request.POST.get('embed_url', '').strip() or None
         files     = request.FILES.getlist('attachments')
+
+        if not judul or not isi:
+            from django.contrib import messages as msg
+            msg.error(request, '⚠️ Judul dan isi pengumuman tidak boleh kosong.')
+            return render(request, 'buat_pengumuman.html')
 
         if judul and isi:
             p = Pengumuman.objects.create(

@@ -331,19 +331,15 @@
     </div>
 
     <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
-
-        <!-- Dashboard -->
         <div class="nav-section">
             <a href="/" class="nav-item {% block nav_home %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">🏠</span> Beranda
             </a>
-        </div>
-
-        <!-- Kelas -->
-        <div class="nav-section">
-            <div class="nav-section-label">Kelas</div>
             <a href="/absensi/" class="nav-item {% block nav_absensi %}{% endblock %}" onclick="closeSidebar()">
-                <span class="nav-icon">📅</span> Absensi
+                <span class="nav-icon">📋</span> Absensi
+            </a>
+            <a href="{% url 'pengumuman_list' %}" class="nav-item {% block nav_pengumuman %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">🔔</span> Pengumuman
             </a>
             <a href="{% url 'tugas_list' %}" class="nav-item {% block nav_tugas %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">📝</span> Tugas
@@ -351,29 +347,23 @@
             <a href="{% url 'materi_list' %}" class="nav-item {% block nav_materi %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">📚</span> Materi
             </a>
-            <a href="{% url 'pengumuman_list' %}" class="nav-item {% block nav_pengumuman %}{% endblock %}" onclick="closeSidebar()">
-                <span class="nav-icon">📢</span> Pengumuman
+            <a href="{% url 'profil' %}" class="nav-item {% block nav_profil %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">👤</span> Profil
             </a>
         </div>
 
         {% if user.is_superuser %}
-        <!-- Kelola (admin only) -->
         <div class="nav-section">
-            <div class="nav-section-label">Kelola</div>
+            <div class="nav-section-label">Admin</div>
             <a href="{% url 'buat_pertemuan' %}" class="nav-item {% block nav_buat %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">＋</span> Buat Pertemuan
             </a>
             <a href="{% url 'buat_tugas' %}" class="nav-item {% block nav_buat_tugas %}{% endblock %}" onclick="closeSidebar()">
-                <span class="nav-icon">✏️</span> Buat Tugas
+                <span class="nav-icon">📝</span> Buat Tugas
             </a>
             <a href="{% url 'unggah_materi' %}" class="nav-item {% block nav_unggah_materi %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">⬆️</span> Unggah Materi
             </a>
-        </div>
-
-        <!-- Laporan (admin only) -->
-        <div class="nav-section">
-            <div class="nav-section-label">Laporan</div>
             <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">📊</span> Rekap Mahasiswa
             </a>
@@ -382,15 +372,6 @@
             </a>
         </div>
         {% endif %}
-
-        <!-- Akun -->
-        <div class="nav-section">
-            <div class="nav-section-label">Akun</div>
-            <a href="{% url 'profil' %}" class="nav-item {% block nav_profil %}{% endblock %}" onclick="closeSidebar()">
-                <span class="nav-icon">👤</span> Profil
-            </a>
-        </div>
-
     </div>
 </div>
 

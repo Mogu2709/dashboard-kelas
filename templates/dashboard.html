@@ -269,88 +269,117 @@
 
 {% else %}
 {# ═══════════════════════════════════════════════════════════════════════════ #}
-{# DASHBOARD MAHASISWA                                                         #}
+{# DASHBOARD MAHASISWA — REDESIGN                                               #}
 {# ═══════════════════════════════════════════════════════════════════════════ #}
 
 <div class="page-header fade">
     <span class="page-emoji">🏠</span>
     <h1 class="page-title">Beranda</h1>
-    <p class="page-subtitle">Selamat datang, <strong>{% if user.profile.nama_lengkap %}{{ user.profile.display_name }}{% else %}{{ user.username }}{% endif %}</strong></p>
+    <p class="page-subtitle">Selamat datang, <strong>{% with p=user.profile %}{% if p.nama_lengkap %}{{ p.display_name }}{% else %}{{ user.username }}{% endif %}{% endwith %}</strong></p>
 </div>
 
 <div class="page-content">
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;" class="stat-grid fade fade-1">
-        <div class="notion-card" style="padding:20px 22px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Pertemuan</div>
-                <div style="font-size:18px;opacity:0.5;">📅</div>
+    {# ── Row 1: Hero kehadiran + 2 stat kecil ─────────────────────────────── #}
+    <div style="display:grid;grid-template-columns:1fr 200px;gap:14px;margin-bottom:14px;" class="mhs-hero-grid fade fade-1">
+
+        {# Kehadiran hero card #}
+        <div class="notion-card" style="padding:24px 28px;display:flex;align-items:center;gap:28px;flex-wrap:wrap;">
+            {# Donut / circle progress #}
+            <div style="position:relative;width:88px;height:88px;flex-shrink:0;">
+                <svg viewBox="0 0 88 88" style="width:88px;height:88px;transform:rotate(-90deg);">
+                    <circle cx="44" cy="44" r="36" fill="none" stroke="var(--bg-secondary)" stroke-width="8"/>
+                    <circle cx="44" cy="44" r="36" fill="none"
+                        stroke="{% if persentase >= 75 %}#22c55e{% elif persentase >= 50 %}#f59e0b{% else %}#ef4444{% endif %}"
+                        stroke-width="8"
+                        stroke-linecap="round"
+                        stroke-dasharray="{{ persentase|floatformat:0 }} {{ 100|add:0 }}"
+                        style="stroke-dasharray: calc({{ persentase }} * 2.262) 226.2;transition:stroke-dasharray 1.4s cubic-bezier(0.16,1,0.3,1);"
+                        class="progress-circle"/>
+                    {# target line at 75% #}
+                    <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="2"
+                        stroke-dasharray="2 224.2"
+                        stroke-dashoffset="-169.65"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                    <span style="font-family:'Lora',serif;font-size:18px;font-weight:700;color:{% if persentase >= 75 %}#1a7f4b{% elif persentase >= 50 %}#854d0e{% else %}#b91c1c{% endif %};line-height:1;">{{ persentase }}%</span>
+                </div>
             </div>
-            <div style="font-family:'Lora',serif;font-size:34px;font-weight:600;color:var(--text);line-height:1;margin-bottom:6px;">{{ total_pertemuan }}</div>
-            <div style="font-size:12px;color:var(--text-tertiary);">pertemuan tercatat</div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;">Progress Kehadiran</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;">{{ total_hadir }} dari {{ total_pertemuan }} pertemuan · target 75%</div>
+                {# Thin progress bar #}
+                <div style="position:relative;background:var(--bg-secondary);border-radius:100px;height:6px;overflow:visible;margin-bottom:6px;">
+                    <div style="position:absolute;left:75%;top:-2px;bottom:-2px;width:2px;background:rgba(0,0,0,0.18);border-radius:1px;z-index:2;"></div>
+                    <div id="progressBar" style="height:100%;border-radius:100px;width:0%;transition:width 1.2s cubic-bezier(0.16,1,0.3,1);background:{% if persentase >= 75 %}linear-gradient(90deg,#22c55e,#1a7f4b){% elif persentase >= 50 %}linear-gradient(90deg,#f59e0b,#d97706){% else %}linear-gradient(90deg,#f87171,#dc2626){% endif %};"></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+                    {% if persentase >= 75 %}
+                    <span class="chip chip-green">✓ Aman</span>
+                    <span style="font-size:12px;color:var(--text-tertiary);">Kehadiranmu mencukupi</span>
+                    {% elif persentase >= 50 %}
+                    <span class="chip chip-yellow">⚡ Perhatian</span>
+                    <span style="font-size:12px;color:var(--text-tertiary);">Perlu {{ 75|add:0 }}% untuk lulus</span>
+                    {% else %}
+                    <span class="chip chip-red">⚠ Bahaya</span>
+                    <span style="font-size:12px;color:#b91c1c;">Segera tingkatkan kehadiran</span>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        <div class="notion-card" style="padding:20px 22px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Kehadiran</div>
-                <div style="font-size:18px;opacity:0.5;">✅</div>
-            </div>
-            <div style="font-family:'Lora',serif;font-size:34px;font-weight:600;color:#1a7f4b;line-height:1;margin-bottom:6px;">{{ total_hadir }}</div>
-            <div style="font-size:12px;color:var(--text-tertiary);">dari {{ total_pertemuan }} pertemuan</div>
-        </div>
-        <div class="notion-card" style="padding:20px 22px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">Persentase</div>
-                <div style="font-size:18px;opacity:0.5;">📈</div>
-            </div>
-            <div style="font-family:'Lora',serif;font-size:34px;font-weight:600;line-height:1;margin-bottom:6px;color:{% if persentase >= 75 %}#1a7f4b{% elif persentase >= 50 %}#92400e{% else %}#b91c1c{% endif %};">{{ persentase }}%</div>
-            <div style="font-size:12px;color:var(--text-tertiary);">{% if persentase >= 75 %}di atas target{% elif persentase >= 50 %}mendekati target{% else %}di bawah target{% endif %}</div>
+
+        {# 2 quick stat di kanan #}
+        <div style="display:flex;flex-direction:column;gap:14px;">
+            <a href="{% url 'tugas_list' %}?status=aktif" style="text-decoration:none;flex:1;">
+                <div class="notion-card" style="padding:16px 18px;height:100%;display:flex;flex-direction:column;justify-content:space-between;{% if tugas_aktif > 0 %}background:#fefce8;border-color:#fde68a;{% endif %}cursor:pointer;">
+                    <div style="font-size:10.5px;font-weight:600;color:{% if tugas_aktif > 0 %}#854d0e{% else %}var(--text-tertiary){% endif %};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Tugas Aktif</div>
+                    <div style="font-family:'Lora',serif;font-size:26px;font-weight:700;color:{% if tugas_aktif > 0 %}#b45309{% else %}var(--text){% endif %};line-height:1;margin-bottom:2px;">{{ tugas_aktif }}</div>
+                    <div style="font-size:11px;color:{% if tugas_aktif > 0 %}#92400e{% else %}var(--text-tertiary){% endif %};">menunggu dikumpulkan →</div>
+                </div>
+            </a>
+            <a href="{% url 'materi_list' %}" style="text-decoration:none;flex:1;">
+                <div class="notion-card" style="padding:16px 18px;height:100%;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;">
+                    <div style="font-size:10.5px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Materi</div>
+                    <div style="font-family:'Lora',serif;font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:2px;">{{ total_materi }}</div>
+                    <div style="font-size:11px;color:var(--text-tertiary);">file tersedia →</div>
+                </div>
+            </a>
         </div>
     </div>
 
-    <div class="notion-card fade fade-2" style="padding:22px 24px;margin-bottom:20px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;">
+    {# ── Row 2: Riwayat pertemuan terbaru ─────────────────────────────────── #}
+    <div class="notion-card fade fade-2" style="overflow:hidden;">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;">
             <div>
-                <div style="font-size:13.5px;font-weight:500;color:var(--text);margin-bottom:2px;">Progress Kehadiran</div>
-                <div style="font-size:12px;color:var(--text-secondary);">Target minimal 75% untuk lulus</div>
+                <div style="font-size:13.5px;font-weight:600;color:var(--text);">📅 Pertemuan Terbaru</div>
+                <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px;">Status kehadiranmu di 5 sesi terakhir</div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:{% if persentase >= 75 %}#1a7f4b{% elif persentase >= 50 %}#92400e{% else %}#b91c1c{% endif %};">{{ persentase }}%</span>
-                {% if persentase >= 75 %}<span class="chip chip-green" style="font-size:11px;">Aman ✓</span>
-                {% elif persentase >= 50 %}<span class="chip chip-yellow" style="font-size:11px;">Perhatian</span>
-                {% else %}<span class="chip chip-red" style="font-size:11px;">Bahaya</span>{% endif %}
+            <a href="{% url 'pertemuan_list' %}" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">Lihat Semua →</a>
+        </div>
+        {% for p in pertemuan_terbaru %}
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #f7f7f5;transition:background 0.1s;" onmouseover="this.style.background='#fafaf8'" onmouseout="this.style.background=''">
+            {# Status badge #}
+            {% if p.id in hadir_ids %}
+            <div style="width:32px;height:32px;border-radius:8px;background:#eefaf4;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">✅</div>
+            {% else %}
+            <div style="width:32px;height:32px;border-radius:8px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">❌</div>
+            {% endif %}
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.judul }}</div>
+                <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px;">{{ p.mata_kuliah.nama }} · {{ p.tanggal|date:"d M Y" }}</div>
             </div>
+            {% if p.id in hadir_ids %}
+            <span class="chip chip-green" style="font-size:11px;flex-shrink:0;">Hadir</span>
+            {% else %}
+            <span class="chip chip-red" style="font-size:11px;flex-shrink:0;">Tidak Hadir</span>
+            {% endif %}
         </div>
-        <div style="position:relative;background:var(--bg-secondary);border-radius:100px;height:8px;overflow:hidden;">
-            <div style="position:absolute;left:75%;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.12);z-index:1;"></div>
-            <div id="progressBar" style="height:100%;border-radius:100px;width:0%;transition:width 1.2s cubic-bezier(0.16,1,0.3,1);background:{% if persentase >= 75 %}linear-gradient(90deg,#22c55e,#1a7f4b){% elif persentase >= 50 %}linear-gradient(90deg,#f59e0b,#d97706){% else %}linear-gradient(90deg,#f87171,#dc2626){% endif %};"></div>
+        {% empty %}
+        <div style="padding:32px;text-align:center;color:var(--text-tertiary);font-size:13px;">
+            <div style="font-size:28px;margin-bottom:8px;">📅</div>
+            Belum ada pertemuan
         </div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;">
-            <span style="font-size:11px;color:var(--text-tertiary);font-family:'IBM Plex Mono',monospace;">0%</span>
-            <span style="font-size:11px;color:var(--text-secondary);font-family:'IBM Plex Mono',monospace;">target: 75%</span>
-            <span style="font-size:11px;color:var(--text-tertiary);font-family:'IBM Plex Mono',monospace;">100%</span>
-        </div>
-        {% if persentase < 75 %}
-        <div style="margin-top:14px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;font-size:13px;color:#b91c1c;display:flex;align-items:center;gap:8px;">
-            <span>⚠️</span><span>Kehadiranmu masih di bawah 75%. Tingkatkan kehadiran agar tidak terkena sanksi akademis.</span>
-        </div>
-        {% endif %}
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="fade fade-3">
-        <a href="{% url 'tugas_list' %}?status=aktif" style="text-decoration:none;">
-            <div class="notion-card" style="padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;">
-                <div style="width:40px;height:40px;border-radius:10px;background:#fef9c3;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📝</div>
-                <div><div style="font-size:14px;font-weight:500;color:var(--text);">Tugas Aktif</div><div style="font-size:12px;color:var(--text-secondary);">{{ tugas_aktif }} tugas menunggu</div></div>
-                <div style="margin-left:auto;color:var(--text-tertiary);">›</div>
-            </div>
-        </a>
-        <a href="{% url 'materi_list' %}" style="text-decoration:none;">
-            <div class="notion-card" style="padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;">
-                <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📚</div>
-                <div><div style="font-size:14px;font-weight:500;color:var(--text);">Materi</div><div style="font-size:12px;color:var(--text-secondary);">{{ total_materi }} materi tersedia</div></div>
-                <div style="margin-left:auto;color:var(--text-tertiary);">›</div>
-            </div>
-        </a>
+        {% endfor %}
     </div>
 
 </div>
@@ -368,6 +397,7 @@ window.addEventListener('load', function() {
 
 <style>
 @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr !important; } }
+@media (max-width: 680px) { .mhs-hero-grid { grid-template-columns: 1fr !important; } }
 @media (max-width: 640px) { .stat-grid { grid-template-columns: 1fr 1fr !important; } }
 @media (max-width: 400px) { .stat-grid { grid-template-columns: 1fr !important; } }
 @keyframes pulse {

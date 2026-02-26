@@ -4,11 +4,19 @@
 {% block content %}
 <div class="page-header fade">
     <span class="page-emoji">📊</span>
-    <h1 class="page-title">Rekap Mahasiswa</h1>
-    <p class="page-subtitle">
-        {% if mk_dipilih %}{{ mk_dipilih.nama }} · {% endif %}
-        {{ total_pertemuan }} pertemuan · {{ total_tugas }} tugas · {{ data_rekap|length }} mahasiswa
-    </p>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+            <h1 class="page-title">Rekap Mahasiswa</h1>
+            <p class="page-subtitle">
+                {% if mk_dipilih %}<strong>{{ mk_dipilih.nama }}</strong> · {% endif %}
+                {{ total_pertemuan }} pertemuan · {{ total_tugas }} tugas · {{ data_rekap|length }} mahasiswa
+            </p>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a href="{% url 'export_excel' %}{% if mk_filter %}?mk={{ mk_filter }}{% endif %}" class="btn btn-secondary" style="font-size:12px;">📊 Excel</a>
+            <a href="{% url 'export_pdf' %}{% if mk_filter %}?mk={{ mk_filter }}{% endif %}" class="btn btn-primary" style="font-size:12px;">📄 PDF</a>
+        </div>
+    </div>
 </div>
 
 <div class="page-content">
@@ -226,9 +234,7 @@
 
     <!-- Action buttons -->
     <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;">
-        <a href="{% url 'pertemuan_list' %}" class="btn btn-secondary">← Kembali</a>
-        <a href="{% url 'export_excel' %}{% if mk_filter %}?mk={{ mk_filter }}{% endif %}" class="btn btn-secondary">📊 Export Excel</a>
-        <a href="{% url 'export_pdf' %}{% if mk_filter %}?mk={{ mk_filter }}{% endif %}" class="btn btn-primary">📄 Export PDF</a>
+        <a href="{% url 'pertemuan_list' %}" class="btn btn-secondary">← Kembali ke Absensi</a>
     </div>
 
 </div>
