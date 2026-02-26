@@ -436,7 +436,7 @@ overlay.addEventListener('click', closeSidebar);
 // ── Profile Dropdown ──
 const profileBtn      = document.getElementById('profile-btn');
 const profileDropdown = document.getElementById('profile-dropdown');
-function closeAllDropdowns() { profileDropdown.classList.remove('open'); closeNotif(); }
+function closeAllDropdowns() { profileDropdown.classList.remove('open'); notifDropdown.classList.remove('open'); document.getElementById('notif-overlay').classList.remove('active'); }
 profileBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     notifDropdown.classList.remove('open');
