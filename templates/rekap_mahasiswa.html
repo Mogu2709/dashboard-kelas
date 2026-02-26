@@ -89,12 +89,19 @@
                 </div>
             </div>
 
-            <!-- Kehadiran angka -->
+            <!-- Kehadiran angka + breakdown izin -->
             <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-secondary);">
                 {{ m.total_hadir }}<span style="color:var(--text-tertiary);">/{{ total_pertemuan }}</span>
+                {% if m.total_izin or m.total_sakit or m.total_alpha %}
+                <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">
+                    {% if m.total_izin %}<span style="font-size:10px;padding:1px 6px;border-radius:100px;background:#eff6ff;color:#1d4ed8;">📋 {{ m.total_izin }}x izin</span>{% endif %}
+                    {% if m.total_sakit %}<span style="font-size:10px;padding:1px 6px;border-radius:100px;background:#fef2f2;color:#b91c1c;">🤒 {{ m.total_sakit }}x sakit</span>{% endif %}
+                    {% if m.total_alpha %}<span style="font-size:10px;padding:1px 6px;border-radius:100px;background:#f4f4f4;color:#666;">❌ {{ m.total_alpha }}x alpha</span>{% endif %}
+                </div>
+                {% endif %}
             </div>
 
-            <!-- Progress bar kehadiran -->
+            <!-- Progress bar kehadiran efektif -->
             <div style="display:flex;align-items:center;gap:8px;">
                 <div style="flex:1;background:var(--bg-secondary);border-radius:100px;height:6px;overflow:hidden;">
                     <div style="height:100%;border-radius:100px;width:{{ m.persentase }}%;background:
@@ -105,6 +112,9 @@
                     {{ m.persentase }}%
                 </span>
             </div>
+            {% if m.persentase != m.persentase_murni %}
+            <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:2px;font-family:'IBM Plex Mono',monospace;">murni {{ m.persentase_murni }}%</div>
+            {% endif %}
 
             <!-- Tugas dikumpulkan -->
             <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-secondary);">

@@ -12,6 +12,12 @@ urlpatterns = [
     path('pertemuan/<int:pk>/', views.detail_pertemuan, name='detail_pertemuan'),
     path('rekap/', views.rekap_mahasiswa, name='rekap_mahasiswa'),
 
+    # Izin Absen
+    path('izin/', views.daftar_izin, name='daftar_izin'),
+    path('izin/saya/', views.izin_saya, name='izin_saya'),
+    path('izin/<int:pertemuan_id>/ajukan/', views.ajukan_izin, name='ajukan_izin'),
+    path('izin/<int:izin_id>/proses/', views.proses_izin, name='proses_izin'),
+
     # Export
     path('rekap/export/excel/', exports.export_excel, name='export_excel'),
     path('rekap/export/pdf/', exports.export_pdf, name='export_pdf'),

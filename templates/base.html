@@ -409,6 +409,11 @@
             <a href="{% url 'grafik_kalender' %}" class="nav-item {% block nav_grafik %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">📅</span> Grafik & Kalender
             </a>
+            {% if not user.is_superuser %}
+            <a href="{% url 'izin_saya' %}" class="nav-item {% block nav_izin_saya %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">📋</span> Izin Saya
+            </a>
+            {% endif %}
         </div>
 
         {% if user.is_superuser %}
@@ -422,6 +427,10 @@
             </a>
             <a href="{% url 'unggah_materi' %}" class="nav-item {% block nav_unggah_materi %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">⬆️</span> Unggah Materi
+            </a>
+            <a href="{% url 'daftar_izin' %}" class="nav-item {% block nav_izin %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">📋</span> Izin Absen
+                {% if pending_izin_count %}<span style="margin-left:auto;background:#dc2626;color:white;font-size:10px;padding:1px 6px;border-radius:100px;font-weight:600;">{{ pending_izin_count }}</span>{% endif %}
             </a>
             <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">📊</span> Rekap Mahasiswa

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block nav_absensi %}active{% endblock %}
+
+{% block content %}
+<div class="page-header fade">
+    <span class="page-emoji">📋</span>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+            <h1 class="page-title">Daftar Pengajuan Izin</h1>
+            <p class="page-subtitle">
+                {% if pending_count > 0 %}
+                <span style="color:#b45309;font-weight:500;">⚡ {{ pending_count }} menunggu persetujuan</span>
+                {% else %}Semua pengajuan sudah diproses 🎉{% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="page-content">
+
+    <!-- Filter tabs -->
+    <div style="display:flex;gap:4px;margin-bottom:20px;" class="fade fade-1">
+        {% for val, label, count in filter_tabs %}
+        <a href="?status={{ val }}" class="btn {% if status_filter == val %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">
+            {{ label }}
+        </a>
+        {% endfor %}
+        <a href="?status=pending" class="btn {% if status_filter == 'pending' or not status_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">⏳ Pending{% if pending_count %} ({{ pending_count }}){% endif %}</a>
+        <a href="?status=approved" class="btn {% if status_filter == 'approved' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">✅ Disetujui</a>
+        <a href="?status=rejected" class="btn {% if status_filter == 'rejected' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">❌ Ditolak</a>
+        <a href="?status=semua" class="btn {% if status_filter == 'semua' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">Semua</a>
+    </div>
+
+    {% if page_obj %}
+    <div class="notion-card fade fade-2" style="overflow:hidden;">
+        {% for izin in page_obj %}
+        <div style="padding:16px 20px;border-bottom:1px solid #f7f7f5;transition:background 0.1s;"
+             onmouseover="this.style.background='#fafaf8'" onmouseout="this.style.background=''">
+            <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+
+                <!-- Avatar -->
+                <div style="width:36px;height:36px;border-radius:8px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">
+                    {{ izin.user.profile.inisial }}
+                </div>
+
+                <!-- Info -->
+                <div style="flex:1;min-width:200px;">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+                        <span style="font-size:13.5px;font-weight:500;color:var(--text);">{{ izin.user.profile.display_name }}</span>
+                        <span style="font-size:11.5px;color:var(--text-tertiary);">{{ izin.user.profile.nim }}</span>
+                        <!-- Jenis chip -->
+                        <span style="font-size:11px;padding:2px 8px;border-radius:100px;font-weight:500;
+                            {% if izin.jenis == 'sakit' %}background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;
+                            {% elif izin.jenis == 'izin' %}background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;
+                            {% else %}background:#f4f4f4;color:#666;border:1px solid #e5e5e5;{% endif %}">
+                            {{ izin.icon }} {{ izin.get_jenis_display }}
+                        </span>
+                        <!-- Status chip -->
+                        <span class="chip chip-{% if izin.status == 'approved' %}green{% elif izin.status == 'rejected' %}red{% else %}yellow{% endif %}" style="font-size:11px;">
+                            {% if izin.status == 'approved' %}✓ Disetujui{% elif izin.status == 'rejected' %}✗ Ditolak{% else %}⏳ Pending{% endif %}
+                        </span>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;">
+                        📅 {{ izin.pertemuan.judul }} · {{ izin.pertemuan.mata_kuliah.nama }} · {{ izin.pertemuan.tanggal|date:"d M Y" }}
+                    </div>
+                    <div style="font-size:13px;color:var(--text-secondary);background:var(--bg-secondary);padding:8px 12px;border-radius:7px;line-height:1.5;">
+                        {{ izin.keterangan }}
+                    </div>
+                    {% if izin.bukti %}
+                    <div style="margin-top:8px;">
+                        <a href="{{ izin.bukti.url }}" target="_blank" class="btn btn-secondary" style="font-size:11.5px;padding:4px 10px;">📎 Lihat Bukti</a>
+                    </div>
+                    {% endif %}
+                    {% if izin.catatan_admin %}
+                    <div style="margin-top:8px;font-size:12.5px;color:var(--text-secondary);">💬 Admin: {{ izin.catatan_admin }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Action (hanya kalau pending) -->
+                {% if izin.status == 'pending' %}
+                <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                    <form method="post" action="{% url 'proses_izin' izin.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approve">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-primary" style="font-size:12px;padding:5px 14px;background:#1a7f4b;width:100%;">✓ Setuju</button>
+                    </form>
+                    <button onclick="showRejectForm({{ izin.id }})" class="btn btn-secondary" style="font-size:12px;padding:5px 14px;color:#b91c1c;border-color:#fecaca;width:100%;">✗ Tolak</button>
+                    <!-- Reject form (hidden) -->
+                    <div id="reject-form-{{ izin.id }}" style="display:none;margin-top:4px;">
+                        <form method="post" action="{% url 'proses_izin' izin.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="reject">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <textarea name="catatan_admin" rows="2" placeholder="Alasan penolakan (opsional)..."
+                                style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:'Geist',sans-serif;resize:none;outline:none;margin-bottom:6px;"></textarea>
+                            <button type="submit" class="btn" style="width:100%;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;font-size:12px;padding:5px;">Konfirmasi Tolak</button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div style="font-size:11.5px;color:var(--text-tertiary);text-align:right;flex-shrink:0;">
+                    {{ izin.diproses_pada|date:"d M Y" }}<br>{{ izin.diproses_pada|date:"H:i" }}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;" class="fade">
+        {% if page_obj.has_previous %}
+        <a href="?status={{ status_filter }}&page={{ page_obj.previous_page_number }}" class="btn btn-secondary" style="font-size:12px;">‹ Prev</a>
+        {% endif %}
+        <span style="padding:5px 12px;font-size:12px;color:var(--text-tertiary);">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a href="?status={{ status_filter }}&page={{ page_obj.next_page_number }}" class="btn btn-secondary" style="font-size:12px;">Next ›</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div style="text-align:center;padding:64px 20px;" class="fade fade-2">
+        <div style="font-size:40px;margin-bottom:12px;">📭</div>
+        <div style="font-size:14px;color:var(--text-secondary);">Tidak ada pengajuan {% if status_filter != 'semua' %}dengan status ini{% endif %}</div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function showRejectForm(id) {
+    const el = document.getElementById('reject-form-' + id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

@@ -224,3 +224,50 @@ class Komentar(models.Model):
     @property
     def is_edited(self):
         return self.diedit_pada is not None
+
+# ─── IZIN ABSEN ───────────────────────────────────────────────────────────────
+
+def izin_upload_path(instance, filename):
+    return f'izin/{instance.user.id}/{instance.pertemuan.id}/{filename}'
+
+
+class IzinAbsen(models.Model):
+    JENIS_CHOICES = [
+        ('izin',  'Izin'),
+        ('sakit', 'Sakit'),
+        ('alpha', 'Alpha'),
+    ]
+    STATUS_CHOICES = [
+        ('pending',  'Menunggu'),
+        ('approved', 'Disetujui'),
+        ('rejected', 'Ditolak'),
+    ]
+
+    user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='izin_absen')
+    pertemuan   = models.ForeignKey(Pertemuan, on_delete=models.CASCADE, related_name='izin_absen')
+    jenis       = models.CharField(max_length=10, choices=JENIS_CHOICES)
+    keterangan  = models.TextField(blank=True)
+    bukti       = models.FileField(upload_to=izin_upload_path, blank=True, null=True)
+    status      = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    dibuat_pada = models.DateTimeField(auto_now_add=True)
+    diproses_pada = models.DateTimeField(null=True, blank=True)
+    diproses_oleh = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='izin_diproses'
+    )
+    catatan_admin = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ('user', 'pertemuan')
+        ordering = ['-dibuat_pada']
+
+    def __str__(self):
+        return f'{self.user.username} - {self.get_jenis_display()} - {self.pertemuan.judul}'
+
+    @property
+    def icon(self):
+        return {'izin': '📋', 'sakit': '🤒', 'alpha': '❌'}.get(self.jenis, '📋')
+
+    @property
+    def status_color(self):
+        return {'pending': 'yellow', 'approved': 'green', 'rejected': 'red'}.get(self.status, 'gray')

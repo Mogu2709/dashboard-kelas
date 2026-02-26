@@ -7,7 +7,7 @@ from django.db.models import Count, Q
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django import forms
-
+from django.contrib import messages
 from .models import (
     Pertemuan, Attendance, MataKuliah,
     Pengumuman, PengumumanAttachment, PengumumanDibaca,
@@ -62,11 +62,35 @@ def pertemuan_list(request):
     hadir_ids = Attendance.objects.filter(
         user=request.user).values_list('pertemuan_id', flat=True)
 
+    # Data izin untuk mahasiswa
+    izin_ids = set()
+    izin_status_map = {}
+    izin_label_map = {}
+    if not request.user.is_superuser:
+        from .models import IzinAbsen
+        STATUS_LABEL = {'pending': '⏳ Menunggu', 'approved': '✓ Izin Disetujui', 'rejected': '✗ Ditolak'}
+        STATUS_CHIP  = {'pending': 'yellow', 'approved': 'green', 'rejected': 'red'}
+        for izin in IzinAbsen.objects.filter(user=request.user).values('pertemuan_id', 'status'):
+            pid = izin['pertemuan_id']
+            izin_ids.add(pid)
+            izin_status_map[pid] = STATUS_CHIP.get(izin['status'], 'gray')
+            izin_label_map[pid]  = STATUS_LABEL.get(izin['status'], izin['status'])
+
+    # Admin: pending izin count untuk alert
+    pending_izin = 0
+    if request.user.is_superuser:
+        from .models import IzinAbsen
+        pending_izin = IzinAbsen.objects.filter(status='pending').count()
+
     return render(request, 'pertemuan_list.html', {
         'pertemuan_list': pertemuan,
         'mata_kuliah_list': mata_kuliah_list,
         'semester_list': semester_list,
         'hadir_ids': hadir_ids,
+        'izin_ids': izin_ids,
+        'izin_status_map': izin_status_map,
+        'izin_label_map': izin_label_map,
+        'pending_izin': pending_izin,
         'now': timezone.now(),
     })
 
@@ -167,7 +191,7 @@ def rekap_mahasiswa(request):
     pertemuan_ids = list(pertemuan_qs.values_list('id', flat=True))
 
     # FIX: Hanya hitung kehadiran di pertemuan yang terfilter
-    # FIX: Hanya mahasiswa yang sudah approved
+    from .models import IzinAbsen
     mahasiswa = User.objects.filter(is_superuser=False, profile__status='approved').annotate(
         total_hadir=Count(
             'attendance',
@@ -175,18 +199,41 @@ def rekap_mahasiswa(request):
         )
     ).order_by('username')
 
+    # Izin per user (approved) — satu query
+    izin_map = {}  # {user_id: {'izin': N, 'sakit': N, 'alpha': N}}
+    if pertemuan_ids:
+        for row in (
+            IzinAbsen.objects
+            .filter(pertemuan_id__in=pertemuan_ids, status='approved')
+            .values('user_id', 'jenis')
+            .annotate(jumlah=Count('id'))
+        ):
+            uid = row['user_id']
+            if uid not in izin_map:
+                izin_map[uid] = {'izin': 0, 'sakit': 0, 'alpha': 0}
+            izin_map[uid][row['jenis']] = row['jumlah']
+
     data_rekap = []
     for mhs in mahasiswa:
-        persen = (
-            round((mhs.total_hadir / total_pertemuan) * 100, 1)
-            if total_pertemuan > 0 else 0
-        )
+        izin_data  = izin_map.get(mhs.id, {'izin': 0, 'sakit': 0, 'alpha': 0})
+        tot_hadir  = mhs.total_hadir
+        tot_izin   = izin_data['izin']
+        tot_sakit  = izin_data['sakit']
+        tot_alpha  = izin_data['alpha']
+        # Efektif hadir = hadir + izin + sakit (alpha tidak dihitung)
+        efektif    = tot_hadir + tot_izin + tot_sakit
+        persen     = round((efektif / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+        persen_murni = round((tot_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
         data_rekap.append({
             'user_id': mhs.id,
             'username': mhs.username,
             'nama_lengkap': mhs.get_full_name() or mhs.username,
-            'total_hadir': mhs.total_hadir,
-            'persentase': persen,
+            'total_hadir': tot_hadir,
+            'total_izin':  tot_izin,
+            'total_sakit': tot_sakit,
+            'total_alpha': tot_alpha,
+            'persentase':  persen,
+            'persentase_murni': persen_murni,
         })
 
     # ── Data nilai per mahasiswa ──────────────────────────────────────────────
@@ -249,7 +296,7 @@ def rekap_mahasiswa(request):
             pass
 
     # Summary stats
-    hadir_aman   = sum(1 for m in data_rekap if m['persentase'] >= 75)
+    hadir_aman   = sum(1 for m in data_rekap if m['persentase'] >= 75)  # pakai persentase efektif
     ada_nilai    = [m for m in data_rekap if m['rata_nilai'] is not None]
     rata_kelas   = round(sum(m['rata_nilai'] for m in ada_nilai) / len(ada_nilai), 1) if ada_nilai else None
 
@@ -498,3 +545,134 @@ def notif_count(request):
         user=request.user).values_list('pengumuman_id', flat=True)
     count = Pengumuman.objects.exclude(id__in=dibaca_ids).count()
     return JsonResponse({'count': count})
+
+# ─── IZIN ABSEN ───────────────────────────────────────────────────────────────
+
+@login_required
+def ajukan_izin(request, pertemuan_id):
+    """Mahasiswa mengajukan izin/sakit untuk pertemuan tertentu."""
+    from .models import IzinAbsen
+    pertemuan = get_object_or_404(Pertemuan, id=pertemuan_id)
+
+    # Tidak bisa izin kalau sudah hadir
+    if Attendance.objects.filter(user=request.user, pertemuan=pertemuan).exists():
+        messages.error(request, 'Kamu sudah tercatat hadir di pertemuan ini.')
+        return redirect('pertemuan_list')
+
+    # Cek sudah pernah ajukan izin
+    existing = IzinAbsen.objects.filter(user=request.user, pertemuan=pertemuan).first()
+
+    if request.method == 'POST':
+        jenis      = request.POST.get('jenis', 'izin')
+        keterangan = request.POST.get('keterangan', '').strip()
+        bukti      = request.FILES.get('bukti')
+
+        if not keterangan:
+            messages.error(request, '⚠️ Keterangan tidak boleh kosong.')
+            return render(request, 'ajukan_izin.html', {
+                'pertemuan': pertemuan, 'existing': existing
+            })
+
+        if existing:
+            # Update pengajuan yang sudah ada (kalau masih pending)
+            if existing.status != 'pending':
+                messages.error(request, 'Pengajuan sudah diproses, tidak bisa diubah.')
+                return redirect('pertemuan_list')
+            existing.jenis      = jenis
+            existing.keterangan = keterangan
+            if bukti:
+                existing.bukti = bukti
+            existing.save()
+            messages.success(request, '✅ Pengajuan izin berhasil diperbarui.')
+        else:
+            izin = IzinAbsen(
+                user=request.user, pertemuan=pertemuan,
+                jenis=jenis, keterangan=keterangan,
+            )
+            if bukti:
+                izin.bukti = bukti
+            izin.save()
+            messages.success(request, '✅ Pengajuan izin berhasil dikirim. Menunggu persetujuan.')
+
+        return redirect('pertemuan_list')
+
+    from .models import IzinAbsen
+    return render(request, 'ajukan_izin.html', {
+        'pertemuan': pertemuan,
+        'existing': existing,
+        'jenis_choices': IzinAbsen.JENIS_CHOICES,
+    })
+
+
+@login_required
+def daftar_izin(request):
+    """Admin: lihat semua pengajuan izin."""
+    if not request.user.is_superuser:
+        return redirect('pertemuan_list')
+    from .models import IzinAbsen
+
+    status_filter = request.GET.get('status', 'pending')
+    izin_qs = (
+        IzinAbsen.objects
+        .select_related('user', 'user__profile', 'pertemuan', 'pertemuan__mata_kuliah')
+        .order_by('-dibuat_pada')
+    )
+    if status_filter and status_filter != 'semua':
+        izin_qs = izin_qs.filter(status=status_filter)
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(izin_qs, 20)
+    page_obj  = paginator.get_page(request.GET.get('page', 1))
+
+    pending_count = IzinAbsen.objects.filter(status='pending').count()
+
+    return render(request, 'daftar_izin.html', {
+        'page_obj': page_obj,
+        'status_filter': status_filter,
+        'pending_count': pending_count,
+    })
+
+
+@login_required
+def proses_izin(request, izin_id):
+    """Admin: approve atau reject pengajuan izin."""
+    if not request.user.is_superuser:
+        return redirect('pertemuan_list')
+    from .models import IzinAbsen
+
+    izin   = get_object_or_404(IzinAbsen, id=izin_id)
+    action = request.POST.get('action')  # 'approve' atau 'reject'
+
+    if request.method == 'POST' and action in ('approve', 'reject'):
+        izin.status        = 'approved' if action == 'approve' else 'rejected'
+        izin.diproses_oleh = request.user
+        izin.diproses_pada = timezone.now()
+        izin.catatan_admin = request.POST.get('catatan_admin', '').strip()
+        izin.save()
+
+        # Kirim notif ke mahasiswa
+        from tasks.models import Notifikasi
+        status_label = 'disetujui ✓' if action == 'approve' else 'ditolak ✗'
+        Notifikasi.objects.create(
+            user=izin.user,
+            tipe='pengumuman',
+            judul=f'Izin {izin.get_jenis_display()} {status_label}',
+            pesan=f'{izin.pertemuan.judul} · {izin.pertemuan.mata_kuliah.nama}',
+            url='/absensi/',
+        )
+        messages.success(request, f'Izin {"disetujui" if action == "approve" else "ditolak"}.')
+
+    return redirect(request.POST.get('next', 'daftar_izin'))
+
+
+@login_required
+def izin_saya(request):
+    """Mahasiswa: lihat riwayat pengajuan izin sendiri."""
+    from .models import IzinAbsen
+    izin_list = (
+        IzinAbsen.objects
+        .filter(user=request.user)
+        .select_related('pertemuan', 'pertemuan__mata_kuliah')
+        .order_by('-dibuat_pada')
+    )
+    return render(request, 'izin_saya.html', {'izin_list': izin_list})
