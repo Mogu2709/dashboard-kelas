@@ -473,11 +473,23 @@ function bukaNotif(id, url, el) {
             el.classList.remove('unread');
             const dot = el.querySelector('.notif-dot');
             if (dot) dot.remove();
-            // Update count
             const currentCount = parseInt(notifBubble.textContent) || 0;
             if (currentCount > 0) updateBubble(currentCount - 1);
         });
-    if (url) window.location.href = url;
+    if (!url) return;
+    // Cek dulu URL-nya valid sebelum redirect
+    fetch(url, { method: 'HEAD' })
+        .then(r => {
+            if (r.ok) {
+                window.location.href = url;
+            } else {
+                // URL sudah tidak ada, tandai notif sebagai stale
+                el.style.opacity = '0.5';
+                const judul = el.querySelector('.notif-judul');
+                if (judul) judul.innerHTML += ' <span style="font-size:11px;color:#b91c1c;">(sudah dihapus)</span>';
+            }
+        })
+        .catch(() => { window.location.href = url; });
 }
 
 function updateBubble(count) {

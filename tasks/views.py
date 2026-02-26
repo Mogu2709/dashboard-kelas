@@ -242,6 +242,8 @@ def hapus_tugas(request, pk):
     tugas = get_object_or_404(Tugas, pk=pk)
     if request.method == 'POST':
         nama = tugas.judul
+        # Hapus notifikasi yang mengarah ke tugas ini
+        Notifikasi.objects.filter(url=f'/tugas/{pk}/').delete()
         tugas.delete()
         messages.success(request, f'🗑️ Tugas "{nama}" berhasil dihapus.')
         return redirect('tugas_list')
