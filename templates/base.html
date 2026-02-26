@@ -253,49 +253,17 @@
             .page-emoji { font-size: 26px; }
             .page-title { font-size: 22px; }
             .page-content { padding: 20px 16px 48px; }
-
-            /* Notif: bottom sheet di mobile */
+            /* Notif dropdown: posisi fixed dari kanan, lebar pas layar */
             .notif-dropdown {
                 position: fixed !important;
-                top: auto !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                width: 100% !important;
-                border-radius: 16px 16px 0 0 !important;
-                max-height: 75vh;
-                display: flex !important;
-                flex-direction: column;
-                transform: translateY(100%);
-                transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
-                animation: none !important;
-            }
-            .notif-dropdown.open {
-                transform: translateY(0) !important;
-            }
-            .notif-body {
-                max-height: none !important;
-                flex: 1;
+                top: 52px !important;
+                right: 10px !important;
+                left: 10px !important;
+                width: auto !important;
+                max-height: 70vh;
                 overflow-y: auto;
             }
-            .notif-header { padding-top: 24px; position: relative; }
-            .notif-header::before {
-                content: '';
-                display: block;
-                width: 36px; height: 4px;
-                background: var(--border-hover);
-                border-radius: 2px;
-                position: absolute;
-                top: 8px; left: 50%; transform: translateX(-50%);
-            }
-            .notif-overlay {
-                display: none;
-                position: fixed; inset: 0;
-                background: rgba(0,0,0,0.3);
-                z-index: 399;
-                backdrop-filter: blur(2px);
-            }
-            .notif-overlay.active { display: block; }
+            .notif-body { max-height: none; }
         }
     </style>
 </head>
@@ -362,7 +330,6 @@
 </div>
 
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
-<div class="notif-overlay" id="notif-overlay"></div>
 
 <!-- ── SIDEBAR ── -->
 <div class="sidebar" id="sidebar">
@@ -436,7 +403,7 @@ overlay.addEventListener('click', closeSidebar);
 // ── Profile Dropdown ──
 const profileBtn      = document.getElementById('profile-btn');
 const profileDropdown = document.getElementById('profile-dropdown');
-function closeAllDropdowns() { profileDropdown.classList.remove('open'); notifDropdown.classList.remove('open'); document.getElementById('notif-overlay').classList.remove('active'); }
+function closeAllDropdowns() { profileDropdown.classList.remove('open'); notifDropdown.classList.remove('open'); }
 profileBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     notifDropdown.classList.remove('open');
@@ -452,28 +419,12 @@ let notifLoaded = false;
 
 const CSRF_TOKEN = '{{ csrf_token }}';
 
-const notifOverlay = document.getElementById('notif-overlay');
-
-function openNotif() {
-    profileDropdown.classList.remove('open');
-    notifDropdown.classList.add('open');
-    notifOverlay.classList.add('active');
-    loadNotif();
-}
-
-function closeNotif() {
-    notifDropdown.classList.remove('open');
-    notifOverlay.classList.remove('active');
-}
-
 notifBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    notifDropdown.classList.contains('open') ? closeNotif() : openNotif();
-});
-
-notifOverlay.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeNotif();
+    profileDropdown.classList.remove('open');
+    const willOpen = !notifDropdown.classList.contains('open');
+    notifDropdown.classList.toggle('open');
+    if (willOpen) loadNotif();
 });
 
 document.addEventListener('click', (e) => {
