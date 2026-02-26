@@ -1,321 +1,235 @@
-import os
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse
-from django.utils import timezone
-from django.db.models import Count
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib import messages
+from django.utils import timezone
 from django import forms
 
-from .models import (
-    Pertemuan, Attendance, MataKuliah,
-    Pengumuman, PengumumanAttachment, PengumumanDibaca,
-    PengumumanLike, Komentar
-)
+from attendance.models import Pertemuan, Attendance
+from .models import UserProfile
 
 
-# ─── HELPERS ──────────────────────────────────────────────────────────────────
+# ─── CUSTOM REGISTER FORM ─────────────────────────────────────────────────────
 
-def admin_check(user):
-    return user.is_superuser
-
-
-def get_attachment_tipe(file):
-    name = file.name.lower()
-    if name.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
-        return 'foto'
-    elif name.endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
-        return 'video'
-    return 'file'
+class RegisterForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('username', 'password1', 'password2')
 
 
-# ─── ABSENSI VIEWS ────────────────────────────────────────────────────────────
+# ─── HELPER ───────────────────────────────────────────────────────────────────
 
-@login_required
-def detail_pertemuan(request, pk):
-    if not request.user.is_superuser:
-        return redirect('pertemuan_list')
-    pertemuan = get_object_or_404(Pertemuan, pk=pk)
-    daftar_hadir = Attendance.objects.filter(pertemuan=pertemuan)
-    return render(request, 'detail_pertemuan.html', {
-        'pertemuan': pertemuan, 'daftar_hadir': daftar_hadir,
-    })
+def check_user_approved(user):
+    if user.is_superuser:
+        return True
+    try:
+        return user.profile.status == 'approved'
+    except UserProfile.DoesNotExist:
+        return False
 
 
-@login_required
-def pertemuan_list(request):
-    mata_kuliah_id = request.GET.get('mata_kuliah')
-    semester = request.GET.get('semester')
-    pertemuan = Pertemuan.objects.all().order_by('-tanggal')
-    mata_kuliah_list = MataKuliah.objects.all().order_by('semester', 'nama')
-    semester_list = MataKuliah.objects.values_list(
-        'semester', flat=True).distinct().order_by('semester')
-    if mata_kuliah_id:
-        pertemuan = pertemuan.filter(mata_kuliah_id=mata_kuliah_id)
-    if semester:
-        pertemuan = pertemuan.filter(mata_kuliah__semester=semester)
-    pertemuan = pertemuan.annotate(jumlah_hadir=Count('attendance'))
-    hadir_ids = Attendance.objects.filter(
-        user=request.user).values_list('pertemuan_id', flat=True)
-    return render(request, 'pertemuan_list.html', {
-        'pertemuan_list': pertemuan,
-        'mata_kuliah_list': mata_kuliah_list,
-        'semester_list': semester_list,
-        'hadir_ids': hadir_ids,
-        'now': timezone.now(),
-    })
+# ─── REGISTER ─────────────────────────────────────────────────────────────────
 
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
 
-@login_required
-def hadir(request, pertemuan_id):
-    pertemuan = get_object_or_404(Pertemuan, id=pertemuan_id)
-    if timezone.now() > pertemuan.batas_absen:
-        return redirect('pertemuan_list')
-    Attendance.objects.get_or_create(user=request.user, pertemuan=pertemuan)
-    return redirect('pertemuan_list')
-
-
-class PertemuanForm(forms.ModelForm):
-    class Meta:
-        model = Pertemuan
-        fields = ['mata_kuliah', 'judul', 'tanggal']
-
-
-# FIX: tambah @login_required + login_url agar tidak error redirect
-@login_required
-@user_passes_test(admin_check, login_url='/login/')
-def buat_pertemuan(request):
     if request.method == 'POST':
-        form = PertemuanForm(request.POST)
+        form = RegisterForm(request.POST)
         if form.is_valid():
-            p = form.save(commit=False)
-            p.dibuat_oleh = request.user
-            p.save()
-            return redirect('pertemuan_list')
+            user = form.save(commit=False)
+            user.is_active = True
+            user.save()
+            UserProfile.objects.create(user=user, status='pending')
+            return redirect('pending_approval')
     else:
-        form = PertemuanForm()
-    return render(request, 'buat_pertemuan.html', {
-        'form': form,
-        'mata_kuliah_list': MataKuliah.objects.all().order_by('semester', 'nama'),
-    })
+        form = RegisterForm()
 
+    return render(request, 'register.html', {'form': form})
+
+
+# ─── PENDING APPROVAL PAGE ────────────────────────────────────────────────────
+
+def pending_approval_view(request):
+    return render(request, 'pending_approval.html')
+
+
+# ─── LOGIN ────────────────────────────────────────────────────────────────────
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    error = None
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            if user.is_superuser:
+                login(request, user)
+                return redirect('dashboard')
+
+            try:
+                profile = user.profile
+            except UserProfile.DoesNotExist:
+                error = 'pending'
+                return render(request, 'login.html', {'error': error})
+
+            if profile.status == 'approved':
+                login(request, user)
+                return redirect('dashboard')
+            elif profile.status == 'pending':
+                error = 'pending'
+            elif profile.status == 'rejected':
+                error = 'rejected'
+        else:
+            error = 'invalid'
+
+    return render(request, 'login.html', {'error': error})
+
+
+# ─── DASHBOARD ────────────────────────────────────────────────────────────────
 
 @login_required
-def rekap_mahasiswa(request):
-    if not request.user.is_superuser:
-        return redirect('pertemuan_list')
+def dashboard_view(request):
+    if not check_user_approved(request.user):
+        logout(request)
+        return redirect('pending_approval')
+
     total_pertemuan = Pertemuan.objects.count()
-    mahasiswa = User.objects.filter(is_superuser=False).annotate(
-        total_hadir=Count('attendance'))
-    data_rekap = []
-    for mhs in mahasiswa:
-        persen = round((mhs.total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
-        data_rekap.append({
-            'username': mhs.username, 'total_hadir': mhs.total_hadir, 'persentase': persen,
-        })
-    return render(request, 'rekap_mahasiswa.html', {
-        'data_rekap': data_rekap, 'total_pertemuan': total_pertemuan,
-    })
+    total_hadir = Attendance.objects.filter(user=request.user).count()
 
-
-# ─── PENGUMUMAN VIEWS ─────────────────────────────────────────────────────────
-
-@login_required
-def pengumuman_list(request):
-    semua = Pengumuman.objects.prefetch_related('attachments', 'likes', 'komentar').all()
-    dibaca_ids = PengumumanDibaca.objects.filter(
-        user=request.user).values_list('pengumuman_id', flat=True)
-    liked_ids = PengumumanLike.objects.filter(
-        user=request.user).values_list('pengumuman_id', flat=True)
-    belum_dibaca = semua.exclude(id__in=dibaca_ids).count()
-
-    return render(request, 'pengumuman_list.html', {
-        'pengumuman_list': semua,
-        'dibaca_ids': list(dibaca_ids),
-        'liked_ids': list(liked_ids),
-        'belum_dibaca': belum_dibaca,
-    })
-
-
-@login_required
-def tandai_dibaca(request, pk):
-    pengumuman = get_object_or_404(Pengumuman, pk=pk)
-    PengumumanDibaca.objects.get_or_create(user=request.user, pengumuman=pengumuman)
-    return redirect('pengumuman_list')
-
-
-@login_required
-def tandai_semua_dibaca(request):
-    for p in Pengumuman.objects.all():
-        PengumumanDibaca.objects.get_or_create(user=request.user, pengumuman=p)
-    return redirect('pengumuman_list')
-
-
-@login_required
-@user_passes_test(admin_check, login_url='/login/')
-def buat_pengumuman(request):
-    if request.method == 'POST':
-        judul     = request.POST.get('judul', '').strip()
-        isi       = request.POST.get('isi', '').strip()
-        prioritas = request.POST.get('prioritas', 'normal')
-        pinned    = request.POST.get('pinned') == 'on'
-        embed_url = request.POST.get('embed_url', '').strip() or None
-        files     = request.FILES.getlist('attachments')
-
-        if judul and isi:
-            p = Pengumuman.objects.create(
-                judul=judul, isi=isi, prioritas=prioritas,
-                pinned=pinned, embed_url=embed_url,
-                dibuat_oleh=request.user,
-            )
-            for f in files:
-                tipe = get_attachment_tipe(f)
-                att = PengumumanAttachment(pengumuman=p, tipe=tipe, nama_asli=f.name)
-                att.file = f
-                att.ukuran = f.size
-                att.save()
-            return redirect('pengumuman_list')
-
-    return render(request, 'buat_pengumuman.html')
-
-
-@login_required
-@user_passes_test(admin_check, login_url='/login/')
-def edit_pengumuman(request, pk):
-    pengumuman = get_object_or_404(Pengumuman, pk=pk)
-
-    if request.method == 'POST':
-        pengumuman.judul     = request.POST.get('judul', '').strip()
-        pengumuman.isi       = request.POST.get('isi', '').strip()
-        pengumuman.prioritas = request.POST.get('prioritas', 'normal')
-        pengumuman.pinned    = request.POST.get('pinned') == 'on'
-        pengumuman.embed_url = request.POST.get('embed_url', '').strip() or None
-        pengumuman.diedit_pada = timezone.now()
-        pengumuman.save()
-
-        files = request.FILES.getlist('attachments')
-        for f in files:
-            tipe = get_attachment_tipe(f)
-            att = PengumumanAttachment(pengumuman=pengumuman, tipe=tipe, nama_asli=f.name)
-            att.file = f
-            att.ukuran = f.size
-            att.save()
-
-        hapus_ids = request.POST.getlist('hapus_attachment')
-        if hapus_ids:
-            PengumumanAttachment.objects.filter(
-                id__in=hapus_ids, pengumuman=pengumuman).delete()
-
-        return redirect('pengumuman_list')
-
-    return render(request, 'edit_pengumuman.html', {'pengumuman': pengumuman})
-
-
-# FIX: hapus template konfirmasi yang belum ada, langsung hapus via POST
-@login_required
-@user_passes_test(admin_check, login_url='/login/')
-def hapus_pengumuman(request, pk):
-    if request.method == 'POST':
-        pengumuman = get_object_or_404(Pengumuman, pk=pk)
-        pengumuman.delete()
-    return redirect('pengumuman_list')
-
-
-# ─── LIKE ─────────────────────────────────────────────────────────────────────
-
-@login_required
-def toggle_like(request, pk):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'method not allowed'}, status=405)
-    pengumuman = get_object_or_404(Pengumuman, pk=pk)
-    like, created = PengumumanLike.objects.get_or_create(
-        user=request.user, pengumuman=pengumuman)
-    if not created:
-        like.delete()
-        liked = False
+    if total_pertemuan > 0:
+        persentase = (total_hadir / total_pertemuan) * 100
     else:
-        liked = True
-    return JsonResponse({'liked': liked, 'count': pengumuman.like_count})
+        persentase = 0
+
+    context = {
+        'total_pertemuan': total_pertemuan,
+        'total_hadir': total_hadir,
+        'persentase': round(persentase, 1),
+    }
+
+    return render(request, 'dashboard.html', context)
 
 
-# ─── KOMENTAR ─────────────────────────────────────────────────────────────────
+# ─── PROFIL ───────────────────────────────────────────────────────────────────
 
 @login_required
-def tambah_komentar(request, pk):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'method not allowed'}, status=405)
+def profil_view(request):
+    """Profil milik sendiri."""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
-    pengumuman = get_object_or_404(Pengumuman, pk=pk)
-    isi = request.POST.get('isi', '').strip()
-    parent_id = request.POST.get('parent_id')
+    if request.method == 'POST':
+        _simpan_profil(request, profile)
+        messages.success(request, 'Profil berhasil diperbarui.')
+        return redirect('profil')
 
-    if not isi:
-        return JsonResponse({'error': 'Komentar tidak boleh kosong'}, status=400)
+    total_hadir = Attendance.objects.filter(user=request.user).count()
+    total_pertemuan = Pertemuan.objects.count()
+    persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
 
-    parent = None
-    if parent_id:
-        try:
-            parent = Komentar.objects.get(id=parent_id, pengumuman=pengumuman)
-        except Komentar.DoesNotExist:
-            pass
-
-    komentar = Komentar.objects.create(
-        pengumuman=pengumuman, user=request.user,
-        isi=isi, parent=parent,
-    )
-
-    return JsonResponse({
-        'id': komentar.id,
-        'user': komentar.user.username,
-        'isi': komentar.isi,
-        'dibuat_pada': komentar.dibuat_pada.strftime('%d %b %Y, %H:%M'),
-        'parent_id': parent.id if parent else None,
-        'is_superuser': komentar.user.is_superuser,
+    return render(request, 'profil.html', {
+        'profile': profile,
+        'is_own_profile': True,
+        'can_edit': True,
+        'total_hadir': total_hadir,
+        'persentase': persentase,
     })
 
 
 @login_required
-def edit_komentar(request, pk):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'method not allowed'}, status=405)
+def profil_user_view(request, user_id):
+    """Superuser melihat/edit profil mahasiswa lain."""
+    if not request.user.is_superuser:
+        return redirect('profil')
 
-    komentar = get_object_or_404(Komentar, pk=pk)
-    if komentar.user != request.user and not request.user.is_superuser:
-        return JsonResponse({'error': 'Tidak diizinkan'}, status=403)
+    target_user = get_object_or_404(User, id=user_id)
+    profile, _ = UserProfile.objects.get_or_create(user=target_user)
 
-    isi = request.POST.get('isi', '').strip()
-    if not isi:
-        return JsonResponse({'error': 'Komentar tidak boleh kosong'}, status=400)
+    if request.method == 'POST':
+        _simpan_profil(request, profile)
+        messages.success(request, f'Profil {target_user.username} berhasil diperbarui.')
+        return redirect('profil_user', user_id=user_id)
 
-    komentar.isi = isi
-    komentar.diedit_pada = timezone.now()
-    komentar.save()
+    total_hadir = Attendance.objects.filter(user=target_user).count()
+    total_pertemuan = Pertemuan.objects.count()
+    persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
 
-    return JsonResponse({
-        'id': komentar.id,
-        'isi': komentar.isi,
-        'diedit_pada': komentar.diedit_pada.strftime('%d %b %Y, %H:%M'),
+    return render(request, 'profil.html', {
+        'profile': profile,
+        'is_own_profile': False,
+        'can_edit': True,  # superuser selalu bisa edit
+        'total_hadir': total_hadir,
+        'persentase': persentase,
+    })
+
+
+def _simpan_profil(request, profile):
+    """Helper: simpan data profil dari POST."""
+    profile.nama_lengkap  = request.POST.get('nama_lengkap', '').strip()
+    profile.nim           = request.POST.get('nim', '').strip()
+    profile.jurusan       = request.POST.get('jurusan', '').strip()
+    profile.jenis_kelamin = request.POST.get('jenis_kelamin', '')
+    angkatan = request.POST.get('angkatan', '').strip()
+    profile.angkatan = int(angkatan) if angkatan.isdigit() else None
+    profile.save()
+
+
+# ─── KELOLA USER (SUPERUSER) ──────────────────────────────────────────────────
+
+@login_required
+def kelola_user_view(request):
+    if not request.user.is_superuser:
+        return redirect('dashboard')
+
+    pending  = UserProfile.objects.filter(status='pending').select_related('user').order_by('dibuat_pada')
+    approved = UserProfile.objects.filter(status='approved').select_related('user').order_by('user__username')
+    rejected = UserProfile.objects.filter(status='rejected').select_related('user').order_by('user__username')
+
+    return render(request, 'kelola_user.html', {
+        'pending': pending,
+        'approved': approved,
+        'rejected': rejected,
     })
 
 
 @login_required
-def hapus_komentar(request, pk):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'method not allowed'}, status=405)
+def approve_user_view(request, user_id):
+    if not request.user.is_superuser:
+        return redirect('dashboard')
+    if request.method == 'POST':
+        profile = get_object_or_404(UserProfile, user_id=user_id)
+        profile.status = 'approved'
+        profile.diproses_pada = timezone.now()
+        profile.diproses_oleh = request.user
+        profile.save()
+    return redirect('kelola_user')
 
-    komentar = get_object_or_404(Komentar, pk=pk)
-    if komentar.user != request.user and not request.user.is_superuser:
-        return JsonResponse({'error': 'Tidak diizinkan'}, status=403)
-
-    komentar.delete()
-    return JsonResponse({'deleted': True})
-
-
-# ─── NOTIF COUNT ──────────────────────────────────────────────────────────────
 
 @login_required
-def notif_count(request):
-    dibaca_ids = PengumumanDibaca.objects.filter(
-        user=request.user).values_list('pengumuman_id', flat=True)
-    count = Pengumuman.objects.exclude(id__in=dibaca_ids).count()
-    return JsonResponse({'count': count})
+def reject_user_view(request, user_id):
+    if not request.user.is_superuser:
+        return redirect('dashboard')
+    if request.method == 'POST':
+        profile = get_object_or_404(UserProfile, user_id=user_id)
+        profile.status = 'rejected'
+        profile.diproses_pada = timezone.now()
+        profile.diproses_oleh = request.user
+        profile.save()
+    return redirect('kelola_user')
+
+
+@login_required
+def hapus_user_view(request, user_id):
+    if not request.user.is_superuser:
+        return redirect('dashboard')
+    if request.method == 'POST':
+        user = get_object_or_404(User, id=user_id, is_superuser=False)
+        user.delete()
+    return redirect('kelola_user')
