@@ -7,6 +7,7 @@ urlpatterns = [
     # Absensi
     path('', pertemuan_list, name='pertemuan_list'),
     path('hadir/<int:pertemuan_id>/', hadir, name='hadir'),
+    path('hadir/<int:pertemuan_id>/kode/', views.absen_kode, name='absen_kode'),
     path('buat/', buat_pertemuan, name='buat_pertemuan'),
     path('pertemuan/<int:pk>/', views.detail_pertemuan, name='detail_pertemuan'),
     path('rekap/', views.rekap_mahasiswa, name='rekap_mahasiswa'),

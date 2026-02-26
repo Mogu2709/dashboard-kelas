@@ -73,11 +73,53 @@ def pertemuan_list(request):
 
 @login_required
 def hadir(request, pertemuan_id):
+    """
+    Diganti: absensi sekarang wajib lewat input kode.
+    Redirect ke halaman input kode, bukan langsung absen.
+    """
+    return redirect('absen_kode', pertemuan_id=pertemuan_id)
+
+
+@login_required
+def absen_kode(request, pertemuan_id):
+    """
+    Halaman input kode absen untuk mahasiswa.
+    GET  → tampilkan form input kode
+    POST → validasi kode lalu absen
+    """
     pertemuan = get_object_or_404(Pertemuan, id=pertemuan_id)
-    if timezone.now() > pertemuan.batas_absen:
+
+    # Sudah hadir? Langsung redirect
+    if Attendance.objects.filter(user=request.user, pertemuan=pertemuan).exists():
         return redirect('pertemuan_list')
-    Attendance.objects.get_or_create(user=request.user, pertemuan=pertemuan)
-    return redirect('pertemuan_list')
+
+    # Waktu sudah habis
+    if not pertemuan.kode_aktif:
+        return render(request, 'absen_kode.html', {
+            'pertemuan': pertemuan,
+            'error': 'expired',
+        })
+
+    error = None
+    if request.method == 'POST':
+        kode_input = request.POST.get('kode', '').strip().upper()
+
+        if not kode_input:
+            error = 'empty'
+        elif kode_input != pertemuan.kode_absen:
+            error = 'salah'
+        else:
+            # Kode benar — catat kehadiran
+            Attendance.objects.get_or_create(user=request.user, pertemuan=pertemuan)
+            return render(request, 'absen_kode.html', {
+                'pertemuan': pertemuan,
+                'sukses': True,
+            })
+
+    return render(request, 'absen_kode.html', {
+        'pertemuan': pertemuan,
+        'error': error,
+    })
 
 
 class PertemuanForm(forms.ModelForm):

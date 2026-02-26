@@ -4,6 +4,13 @@ from django.utils import timezone
 from django.conf import settings
 from datetime import timedelta
 import os
+import random
+
+
+def _generate_kode():
+    """Generate kode absen 6 karakter, hindari karakter mirip (0/O, 1/I/L)."""
+    chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    return ''.join(random.choices(chars, k=6))
 
 
 class MataKuliah(models.Model):
@@ -16,24 +23,39 @@ class MataKuliah(models.Model):
 
 class Pertemuan(models.Model):
     mata_kuliah = models.ForeignKey(MataKuliah, on_delete=models.CASCADE)
-    judul = models.CharField(max_length=100)
-    tanggal = models.DateField()
+    judul       = models.CharField(max_length=100)
+    tanggal     = models.DateField()
     dibuat_oleh = models.ForeignKey(User, on_delete=models.CASCADE)
     waktu_mulai = models.DateTimeField(default=timezone.now)
     batas_absen = models.DateTimeField(blank=True, null=True)
+    kode_absen  = models.CharField(
+        max_length=6, blank=True,
+        help_text='Kode 6 karakter untuk absensi, auto-generate.'
+    )
 
     def save(self, *args, **kwargs):
         if not self.batas_absen:
             self.batas_absen = self.waktu_mulai + timedelta(hours=2)
+        # Auto-generate kode unik saat pertama dibuat
+        if not self.kode_absen:
+            kode = _generate_kode()
+            while Pertemuan.objects.filter(kode_absen=kode).exists():
+                kode = _generate_kode()
+            self.kode_absen = kode
         super().save(*args, **kwargs)
+
+    @property
+    def kode_aktif(self):
+        """True kalau kode masih bisa dipakai."""
+        return bool(self.batas_absen) and timezone.now() <= self.batas_absen
 
     def __str__(self):
         return f"{self.mata_kuliah.nama} - {self.judul}"
 
 
 class Attendance(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    pertemuan = models.ForeignKey(Pertemuan, on_delete=models.CASCADE)
+    user       = models.ForeignKey(User, on_delete=models.CASCADE)
+    pertemuan  = models.ForeignKey(Pertemuan, on_delete=models.CASCADE)
     waktu_hadir = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -41,6 +63,7 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.pertemuan.judul}"
+
 
 
 # ─── PENGUMUMAN ───────────────────────────────────────────────────────────────
