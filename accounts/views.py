@@ -42,6 +42,7 @@ def register_view(request):
             user = form.save(commit=False)
             user.is_active = True
             user.save()
+            # FITUR BARU: langsung buat profil kosong dengan data awal
             UserProfile.objects.create(user=user, status='pending')
             return redirect('pending_approval')
     else:
@@ -59,6 +60,7 @@ def pending_approval_view(request):
 # ─── LOGIN ────────────────────────────────────────────────────────────────────
 
 def login_view(request):
+    # FIX: kalau sudah login, langsung ke dashboard (bukan loop ke login lagi)
     if request.user.is_authenticated:
         return redirect('dashboard')
 
@@ -107,13 +109,21 @@ def dashboard_view(request):
 
     # Tugas aktif & materi untuk quick links di dashboard
     try:
-        from tasks.models import Tugas, Materi
-        from django.utils import timezone
+        from tasks.models import Tugas, Materi, Notifikasi
         tugas_aktif = Tugas.objects.filter(deadline__gt=timezone.now()).count()
         total_materi = Materi.objects.count()
+        notif_unread = Notifikasi.objects.filter(user=request.user, dibaca=False).count()
     except Exception:
         tugas_aktif = 0
         total_materi = 0
+        notif_unread = 0
+
+    # Pertemuan terbaru (5 terakhir) untuk quick view di dashboard
+    pertemuan_terbaru = Pertemuan.objects.order_by('-tanggal')[:5]
+    hadir_ids = Attendance.objects.filter(
+        user=request.user,
+        pertemuan__in=pertemuan_terbaru
+    ).values_list('pertemuan_id', flat=True)
 
     context = {
         'total_pertemuan': total_pertemuan,
@@ -121,8 +131,12 @@ def dashboard_view(request):
         'persentase': persentase,
         'tugas_aktif': tugas_aktif,
         'total_materi': total_materi,
+        'notif_unread': notif_unread,
+        'pertemuan_terbaru': pertemuan_terbaru,
+        'hadir_ids': list(hadir_ids),
     }
     return render(request, 'dashboard.html', context)
+
 
 # ─── PROFIL ───────────────────────────────────────────────────────────────────
 
@@ -133,12 +147,37 @@ def profil_view(request):
 
     if request.method == 'POST':
         _simpan_profil(request, profile)
-        messages.success(request, 'Profil berhasil diperbarui.')
+        messages.success(request, '✅ Profil berhasil diperbarui.')
         return redirect('profil')
 
     total_hadir = Attendance.objects.filter(user=request.user).count()
     total_pertemuan = Pertemuan.objects.count()
     persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+
+    # Riwayat kehadiran untuk profil lengkap
+    riwayat_hadir = (
+        Attendance.objects
+        .filter(user=request.user)
+        .select_related('pertemuan', 'pertemuan__mata_kuliah')
+        .order_by('-waktu_hadir')[:10]
+    )
+
+    # Statistik per mata kuliah
+    from attendance.models import MataKuliah
+    from django.db.models import Count
+    stats_mk = []
+    for mk in MataKuliah.objects.all():
+        total_mk = Pertemuan.objects.filter(mata_kuliah=mk).count()
+        hadir_mk = Attendance.objects.filter(
+            user=request.user, pertemuan__mata_kuliah=mk
+        ).count()
+        persen_mk = round((hadir_mk / total_mk) * 100, 1) if total_mk > 0 else 0
+        stats_mk.append({
+            'mk': mk,
+            'total': total_mk,
+            'hadir': hadir_mk,
+            'persen': persen_mk,
+        })
 
     return render(request, 'profil.html', {
         'profile': profile,
@@ -146,6 +185,8 @@ def profil_view(request):
         'can_edit': True,
         'total_hadir': total_hadir,
         'persentase': persentase,
+        'riwayat_hadir': riwayat_hadir,
+        'stats_mk': stats_mk,
     })
 
 
@@ -160,19 +201,59 @@ def profil_user_view(request, user_id):
 
     if request.method == 'POST':
         _simpan_profil(request, profile)
-        messages.success(request, f'Profil {target_user.username} berhasil diperbarui.')
+        messages.success(request, f'✅ Profil {target_user.username} berhasil diperbarui.')
         return redirect('profil_user', user_id=user_id)
 
     total_hadir = Attendance.objects.filter(user=target_user).count()
     total_pertemuan = Pertemuan.objects.count()
     persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
 
+    # Riwayat kehadiran untuk superuser lihat profil mahasiswa
+    riwayat_hadir = (
+        Attendance.objects
+        .filter(user=target_user)
+        .select_related('pertemuan', 'pertemuan__mata_kuliah')
+        .order_by('-waktu_hadir')[:10]
+    )
+
+    # Statistik per MK untuk user ini
+    from attendance.models import MataKuliah
+    stats_mk = []
+    for mk in MataKuliah.objects.all():
+        total_mk = Pertemuan.objects.filter(mata_kuliah=mk).count()
+        hadir_mk = Attendance.objects.filter(
+            user=target_user, pertemuan__mata_kuliah=mk
+        ).count()
+        persen_mk = round((hadir_mk / total_mk) * 100, 1) if total_mk > 0 else 0
+        stats_mk.append({
+            'mk': mk,
+            'total': total_mk,
+            'hadir': hadir_mk,
+            'persen': persen_mk,
+        })
+
+    # Nilai tugas untuk superuser lihat profil mahasiswa
+    try:
+        from tasks.models import TugasSubmission
+        submissions = (
+            TugasSubmission.objects
+            .filter(user=target_user, nilai__isnull=False)
+            .select_related('tugas', 'tugas__mata_kuliah')
+            .order_by('-dinilai_pada')
+        )
+    except Exception:
+        submissions = []
+
     return render(request, 'profil.html', {
         'profile': profile,
+        'target_user': target_user,
         'is_own_profile': False,
-        'can_edit': True,  # superuser selalu bisa edit
+        'can_edit': True,
         'total_hadir': total_hadir,
         'persentase': persentase,
+        'riwayat_hadir': riwayat_hadir,
+        'stats_mk': stats_mk,
+        'submissions': submissions,
     })
 
 
@@ -183,7 +264,16 @@ def _simpan_profil(request, profile):
     profile.jurusan       = request.POST.get('jurusan', '').strip()
     profile.jenis_kelamin = request.POST.get('jenis_kelamin', '')
     angkatan = request.POST.get('angkatan', '').strip()
-    profile.angkatan = int(angkatan) if angkatan.isdigit() else None
+    profile.angkatan      = int(angkatan) if angkatan.isdigit() else None
+
+    # FITUR BARU: simpan no_hp dan bio kalau ada di model
+    no_hp = request.POST.get('no_hp', '').strip()
+    bio   = request.POST.get('bio', '').strip()
+    if hasattr(profile, 'no_hp'):
+        profile.no_hp = no_hp
+    if hasattr(profile, 'bio'):
+        profile.bio = bio
+
     profile.save()
 
 

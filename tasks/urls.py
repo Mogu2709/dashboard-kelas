@@ -15,6 +15,9 @@ urlpatterns = [
     path('<int:pk>/hapus/', views.hapus_tugas, name='hapus_tugas'),
     path('submission/<int:pk>/hapus/', views.hapus_submission, name='hapus_submission'),
 
+    # FITUR BARU: Grading / Nilai
+    path('submission/<int:pk>/nilai/', views.beri_nilai, name='beri_nilai'),
+
     # Materi
     path('materi/', views.materi_list, name='materi_list'),
     path('materi/unggah/', views.unggah_materi, name='unggah_materi'),

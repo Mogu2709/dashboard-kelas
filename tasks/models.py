@@ -3,11 +3,26 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import os
 
-try:
-    from cloudinary_storage.storage import RawMediaCloudinaryStorage
-    raw_storage = RawMediaCloudinaryStorage()
-except Exception:
-    raw_storage = None
+
+# ─── STORAGE HELPER ───────────────────────────────────────────────────────────
+# FIX: Jangan set storage=None ke field. Kalau Cloudinary tidak tersedia,
+# biarkan Django pakai default storage (local/media).
+
+def _get_raw_storage():
+    """Return RawMediaCloudinaryStorage jika tersedia, else None (pakai default)."""
+    try:
+        from cloudinary_storage.storage import RawMediaCloudinaryStorage
+        import cloudinary
+        # Pastikan config Cloudinary sudah diset
+        if cloudinary.config().cloud_name:
+            return RawMediaCloudinaryStorage()
+    except Exception:
+        pass
+    return None
+
+
+# Dipanggil sekali saat startup
+_raw_storage = _get_raw_storage()
 
 
 def tugas_soal_upload_path(instance, filename):
@@ -28,7 +43,12 @@ class Tugas(models.Model):
     dibuat_oleh    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tugas_dibuat')
     dibuat_pada    = models.DateTimeField(auto_now_add=True)
     diedit_pada    = models.DateTimeField(null=True, blank=True)
-    file_soal      = models.FileField(upload_to=tugas_soal_upload_path, blank=True, null=True, storage=raw_storage)
+    # FIX: Kondisional storage - pakai Cloudinary kalau tersedia, kalau tidak pakai default
+    file_soal      = models.FileField(
+        upload_to=tugas_soal_upload_path,
+        blank=True, null=True,
+        storage=_raw_storage  # None = pakai DEFAULT_FILE_STORAGE dari settings
+    )
     nama_file_soal = models.CharField(max_length=255, blank=True)
 
     class Meta:
@@ -65,12 +85,29 @@ class Tugas(models.Model):
 class TugasSubmission(models.Model):
     tugas            = models.ForeignKey(Tugas, on_delete=models.CASCADE, related_name='submissions')
     user             = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions')
-    file_jawaban     = models.FileField(upload_to=tugas_submission_upload_path, storage=raw_storage)
+    file_jawaban     = models.FileField(
+        upload_to=tugas_submission_upload_path,
+        storage=_raw_storage
+    )
     nama_file        = models.CharField(max_length=255, blank=True)
     ukuran           = models.PositiveBigIntegerField(default=0)
     catatan          = models.TextField(blank=True)
     dikumpulkan_pada = models.DateTimeField(auto_now_add=True)
     diperbarui_pada  = models.DateTimeField(auto_now=True)
+
+    # ─── FITUR BARU: Nilai/Grading ────────────────────────────────────────────
+    nilai            = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        null=True, blank=True,
+        help_text='Nilai 0–100'
+    )
+    feedback         = models.TextField(blank=True, help_text='Feedback dari dosen/admin')
+    dinilai_pada     = models.DateTimeField(null=True, blank=True)
+    dinilai_oleh     = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='penilaian_diberikan'
+    )
 
     class Meta:
         unique_together = ('tugas', 'user')
@@ -92,6 +129,22 @@ class TugasSubmission(models.Model):
         else:
             return f'{self.ukuran / (1024*1024):.1f} MB'
 
+    @property
+    def grade_label(self):
+        """Konversi nilai numerik ke grade huruf."""
+        if self.nilai is None:
+            return '-'
+        n = float(self.nilai)
+        if n >= 85:
+            return 'A'
+        elif n >= 75:
+            return 'B'
+        elif n >= 65:
+            return 'C'
+        elif n >= 55:
+            return 'D'
+        return 'E'
+
     def save(self, *args, **kwargs):
         if self.file_jawaban and not self.nama_file:
             self.nama_file = os.path.basename(self.file_jawaban.name)
@@ -107,7 +160,11 @@ class Materi(models.Model):
     mata_kuliah   = models.ForeignKey('attendance.MataKuliah', on_delete=models.CASCADE, related_name='materi')
     judul         = models.CharField(max_length=200)
     deskripsi     = models.TextField(blank=True)
-    file          = models.FileField(upload_to=materi_upload_path, blank=True, null=True, storage=raw_storage)
+    file          = models.FileField(
+        upload_to=materi_upload_path,
+        blank=True, null=True,
+        storage=_raw_storage
+    )
     nama_file     = models.CharField(max_length=255, blank=True)
     ukuran        = models.PositiveBigIntegerField(default=0)
     diunggah_oleh = models.ForeignKey(User, on_delete=models.CASCADE, related_name='materi_diunggah')
@@ -172,7 +229,12 @@ class Notifikasi(models.Model):
 
     @property
     def icon(self):
-        return {'tugas_baru': '📝', 'materi_baru': '📚', 'deadline': '⏰', 'pengumuman': '🔔'}.get(self.tipe, '🔔')
+        return {
+            'tugas_baru': '📝',
+            'materi_baru': '📚',
+            'deadline': '⏰',
+            'pengumuman': '🔔'
+        }.get(self.tipe, '🔔')
 
     @property
     def waktu_relatif(self):

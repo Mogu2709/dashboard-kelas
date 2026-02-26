@@ -1,10 +1,11 @@
 import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 from django import forms
 
 from .models import (
@@ -36,9 +37,10 @@ def detail_pertemuan(request, pk):
     if not request.user.is_superuser:
         return redirect('pertemuan_list')
     pertemuan = get_object_or_404(Pertemuan, pk=pk)
-    daftar_hadir = Attendance.objects.filter(pertemuan=pertemuan)
+    daftar_hadir = Attendance.objects.filter(pertemuan=pertemuan).select_related('user')
     return render(request, 'detail_pertemuan.html', {
-        'pertemuan': pertemuan, 'daftar_hadir': daftar_hadir,
+        'pertemuan': pertemuan,
+        'daftar_hadir': daftar_hadir,
     })
 
 
@@ -50,13 +52,16 @@ def pertemuan_list(request):
     mata_kuliah_list = MataKuliah.objects.all().order_by('semester', 'nama')
     semester_list = MataKuliah.objects.values_list(
         'semester', flat=True).distinct().order_by('semester')
+
     if mata_kuliah_id:
         pertemuan = pertemuan.filter(mata_kuliah_id=mata_kuliah_id)
     if semester:
         pertemuan = pertemuan.filter(mata_kuliah__semester=semester)
+
     pertemuan = pertemuan.annotate(jumlah_hadir=Count('attendance'))
     hadir_ids = Attendance.objects.filter(
         user=request.user).values_list('pertemuan_id', flat=True)
+
     return render(request, 'pertemuan_list.html', {
         'pertemuan_list': pertemuan,
         'mata_kuliah_list': mata_kuliah_list,
@@ -81,7 +86,6 @@ class PertemuanForm(forms.ModelForm):
         fields = ['mata_kuliah', 'judul', 'tanggal']
 
 
-# FIX: tambah @login_required + login_url agar tidak error redirect
 @login_required
 @user_passes_test(admin_check, login_url='/login/')
 def buat_pertemuan(request):
@@ -102,19 +106,62 @@ def buat_pertemuan(request):
 
 @login_required
 def rekap_mahasiswa(request):
+    """
+    FITUR BARU: Filter rekap per mata kuliah.
+    FIX: Persentase sekarang dihitung per MK yang difilter, bukan total semua pertemuan.
+    """
     if not request.user.is_superuser:
         return redirect('pertemuan_list')
-    total_pertemuan = Pertemuan.objects.count()
+
+    mk_filter = request.GET.get('mk')
+    mata_kuliah_list = MataKuliah.objects.all().order_by('semester', 'nama')
+
+    # Query pertemuan sesuai filter
+    pertemuan_qs = Pertemuan.objects.all()
+    if mk_filter:
+        pertemuan_qs = pertemuan_qs.filter(mata_kuliah_id=mk_filter)
+
+    total_pertemuan = pertemuan_qs.count()
+    pertemuan_ids = list(pertemuan_qs.values_list('id', flat=True))
+
+    # FIX: Hanya hitung kehadiran di pertemuan yang terfilter
     mahasiswa = User.objects.filter(is_superuser=False).annotate(
-        total_hadir=Count('attendance'))
+        total_hadir=Count(
+            'attendance',
+            filter=Q(attendance__pertemuan_id__in=pertemuan_ids)
+        )
+    ).order_by('username')
+
     data_rekap = []
     for mhs in mahasiswa:
-        persen = round((mhs.total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+        persen = (
+            round((mhs.total_hadir / total_pertemuan) * 100, 1)
+            if total_pertemuan > 0 else 0
+        )
         data_rekap.append({
-            'username': mhs.username, 'total_hadir': mhs.total_hadir, 'persentase': persen,
+            'username': mhs.username,
+            'nama_lengkap': mhs.get_full_name() or mhs.username,
+            'total_hadir': mhs.total_hadir,
+            'persentase': persen,
         })
+
+    # Sort descending persentase
+    data_rekap.sort(key=lambda x: x['persentase'], reverse=True)
+
+    # Nama MK yang dipilih (untuk tampilan)
+    mk_dipilih = None
+    if mk_filter:
+        try:
+            mk_dipilih = MataKuliah.objects.get(pk=mk_filter)
+        except MataKuliah.DoesNotExist:
+            pass
+
     return render(request, 'rekap_mahasiswa.html', {
-        'data_rekap': data_rekap, 'total_pertemuan': total_pertemuan,
+        'data_rekap': data_rekap,
+        'total_pertemuan': total_pertemuan,
+        'mata_kuliah_list': mata_kuliah_list,
+        'mk_filter': mk_filter,
+        'mk_dipilih': mk_dipilih,
     })
 
 
@@ -122,17 +169,28 @@ def rekap_mahasiswa(request):
 
 @login_required
 def pengumuman_list(request):
+    """
+    FITUR BARU: Pagination — 10 pengumuman per halaman.
+    """
     semua = Pengumuman.objects.prefetch_related('attachments', 'likes', 'komentar').all()
-    dibaca_ids = PengumumanDibaca.objects.filter(
-        user=request.user).values_list('pengumuman_id', flat=True)
-    liked_ids = PengumumanLike.objects.filter(
-        user=request.user).values_list('pengumuman_id', flat=True)
+    dibaca_ids = list(
+        PengumumanDibaca.objects.filter(user=request.user).values_list('pengumuman_id', flat=True)
+    )
+    liked_ids = list(
+        PengumumanLike.objects.filter(user=request.user).values_list('pengumuman_id', flat=True)
+    )
     belum_dibaca = semua.exclude(id__in=dibaca_ids).count()
 
+    # Pagination
+    paginator = Paginator(semua, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'pengumuman_list.html', {
-        'pengumuman_list': semua,
-        'dibaca_ids': list(dibaca_ids),
-        'liked_ids': list(liked_ids),
+        'pengumuman_list': page_obj,      # sekarang page_obj, bukan semua
+        'page_obj': page_obj,
+        'dibaca_ids': dibaca_ids,
+        'liked_ids': liked_ids,
         'belum_dibaca': belum_dibaca,
     })
 
@@ -146,8 +204,14 @@ def tandai_dibaca(request, pk):
 
 @login_required
 def tandai_semua_dibaca(request):
-    for p in Pengumuman.objects.all():
-        PengumumanDibaca.objects.get_or_create(user=request.user, pengumuman=p)
+    # FIX: Ambil id yang belum dibaca lalu bulk create — lebih efisien
+    dibaca_ids = PengumumanDibaca.objects.filter(
+        user=request.user).values_list('pengumuman_id', flat=True)
+    belum = Pengumuman.objects.exclude(id__in=dibaca_ids).values_list('id', flat=True)
+    PengumumanDibaca.objects.bulk_create(
+        [PengumumanDibaca(user=request.user, pengumuman_id=pid) for pid in belum],
+        ignore_conflicts=True,
+    )
     return redirect('pengumuman_list')
 
 
@@ -175,16 +239,18 @@ def buat_pengumuman(request):
                     judul=f'Pengumuman: {judul}',
                     pesan=isi[:100],
                     url='/absensi/pengumuman/',
-                    exclude_user=request.user
+                    exclude_user=request.user,
                 )
             except Exception:
                 pass
+
             for f in files:
                 tipe = get_attachment_tipe(f)
                 att = PengumumanAttachment(pengumuman=p, tipe=tipe, nama_asli=f.name)
                 att.file = f
                 att.ukuran = f.size
                 att.save()
+
             return redirect('pengumuman_list')
 
     return render(request, 'buat_pengumuman.html')
@@ -204,8 +270,7 @@ def edit_pengumuman(request, pk):
         pengumuman.diedit_pada = timezone.now()
         pengumuman.save()
 
-        files = request.FILES.getlist('attachments')
-        for f in files:
+        for f in request.FILES.getlist('attachments'):
             tipe = get_attachment_tipe(f)
             att = PengumumanAttachment(pengumuman=pengumuman, tipe=tipe, nama_asli=f.name)
             att.file = f
@@ -222,7 +287,6 @@ def edit_pengumuman(request, pk):
     return render(request, 'edit_pengumuman.html', {'pengumuman': pengumuman})
 
 
-# FIX: hapus template konfirmasi yang belum ada, langsung hapus via POST
 @login_required
 @user_passes_test(admin_check, login_url='/login/')
 def hapus_pengumuman(request, pk):

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.conf import settings
 from datetime import timedelta
 import os
 
@@ -72,24 +73,41 @@ class Pengumuman(models.Model):
 
     @property
     def youtube_embed_url(self):
-        """Convert YouTube watch URL to embed URL."""
+        """
+        Convert YouTube watch URL to embed URL.
+        FIX: Tidak lagi hardcode domain Railway. Origin diambil dari
+        CSRF_TRUSTED_ORIGINS di settings, atau dikosongkan kalau tidak ada.
+        """
         if not self.embed_url:
             return None
         url = self.embed_url
+
+        # Ambil origin dari settings supaya tidak hardcode
+        origin = ''
+        trusted = getattr(settings, 'CSRF_TRUSTED_ORIGINS', [])
+        if trusted:
+            origin = f'&origin={trusted[0]}'
+
+        def make_embed(vid_id):
+            return f'https://www.youtube.com/embed/{vid_id}?rel=0{origin}'
+
         # Handle youtu.be short links
         if 'youtu.be/' in url:
             vid = url.split('youtu.be/')[-1].split('?')[0]
-            return f'https://www.youtube.com/embed/{vid}?origin=https://web-production-1d4d8.up.railway.app'
+            return make_embed(vid)
+
         # Handle youtube.com/watch?v=
         if 'youtube.com/watch' in url:
             import urllib.parse
             params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
             vid = params.get('v', [None])[0]
             if vid:
-                return f'https://www.youtube.com/embed/{vid}?origin=https://web-production-1d4d8.up.railway.app'
-        # Handle youtube.com/embed/ already
+                return make_embed(vid)
+
+        # Handle youtube.com/embed/ (sudah embed)
         if 'youtube.com/embed/' in url:
             return url
+
         return None
 
     @property

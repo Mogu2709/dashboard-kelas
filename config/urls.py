@@ -1,27 +1,32 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from accounts.views import dashboard_view
 from django.conf import settings
 from django.conf.urls.static import static
+
+# Import dashboard_view langsung di sini
+from accounts.views import dashboard_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # Auth & Accounts (register, login custom, pending, kelola user)
+    # ─── Dashboard (root '/') ─────────────────────────────────────────────────
+    # FIX: Taruh dashboard_view di root SEBELUM include accounts.urls.
+    # Dengan begini '/' selalu hit dashboard_view (yang sudah ada @login_required
+    # di dalamnya), bukan tertimpa oleh accounts.urls.
+    path('', dashboard_view, name='dashboard'),
+
+    # ─── Accounts (login, register, profil, kelola user) ─────────────────────
+    # accounts.urls TIDAK boleh punya path('') lagi — harus ada prefix
+    # misal 'login/', 'register/', dll. (lihat accounts_urls_fixed.py)
     path('', include('accounts.urls')),
 
-    # Logout tetap pakai bawaan Django
+    # Logout pakai bawaan Django
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
 
-    # Absensi & Pengumuman
+    # ─── Fitur Utama ──────────────────────────────────────────────────────────
     path('absensi/', include('attendance.urls')),
-
-    # tugas
     path('tugas/', include('tasks.urls')),
-
-    # Dashboard (root URL)
-    path('', dashboard_view, name='dashboard'),
 ]
 
 # Serve media files saat development
