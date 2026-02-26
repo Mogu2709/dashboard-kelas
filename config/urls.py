@@ -17,6 +17,9 @@ urlpatterns = [
     # Absensi & Pengumuman
     path('absensi/', include('attendance.urls')),
 
+    # tugas
+    path('tugas/', include('tasks.urls')),
+
     # Dashboard (root URL)
     path('', dashboard_view, name='dashboard'),
 ]

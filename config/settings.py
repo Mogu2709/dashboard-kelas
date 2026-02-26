@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'cloudinary',
     'accounts',
     'attendance',
+    'tasks',
 ]
 
 MIDDLEWARE = [

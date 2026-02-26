@@ -442,8 +442,11 @@
                 <span style="flex:1;">Pengumuman</span>
                 <span id="notif-badge" style="display:none;background:#e03e3e;color:white;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:100px;line-height:16px;"></span>
             </a>
-            <a href="{% url 'profil' %}" class="nav-item {% block nav_profil %}{% endblock %}" onclick="closeSidebar()">
-                <span class="nav-icon">👤</span> Profil
+            <a href="{% url 'tugas_list' %}" class="nav-item {% block nav_tugas %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">📝</span> Tugas
+            </a>
+            <a href="{% url 'materi_list' %}" class="nav-item {% block nav_materi %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">📚</span> Materi
             </a>
         </div>
 
@@ -460,6 +463,18 @@
                 <span class="nav-icon">👥</span> Kelola User
             </a>
         </div>
+
+        <div class="nav-section">
+            <div class="nav-section-label">Admin</div>
+            <a href="{% url 'buat_tugas' %}" class="nav-item {% block nav_buat_tugas %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">＋</span> Buat Tugas
+            </a>
+            <a href="{% url 'unggah_materi' %}" class="nav-item {% block nav_unggah_materi %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">⬆️</span> Unggah Materi
+            </a>
+            ... (nav admin yang sudah ada)
+        </div>
+
         {% endif %}
     </div>
 </div>
