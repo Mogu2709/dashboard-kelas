@@ -406,6 +406,9 @@
             <a href="{% url 'profil' %}" class="nav-item {% block nav_profil %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">👤</span> Profil
             </a>
+            <a href="{% url 'grafik_kalender' %}" class="nav-item {% block nav_grafik %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">📅</span> Grafik & Kalender
+            </a>
         </div>
 
         {% if user.is_superuser %}
@@ -422,9 +425,6 @@
             </a>
             <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">📊</span> Rekap Mahasiswa
-            </a>
-            <a href="{% url 'grafik_kalender' %}" class="nav-item {% block nav_grafik %}{% endblock %}" onclick="closeSidebar()">
-                <span class="nav-icon">📅</span> Grafik & Kalender
             </a>
             <a href="{% url 'kelola_user' %}" class="nav-item {% block nav_kelola_user %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">👥</span> Kelola User

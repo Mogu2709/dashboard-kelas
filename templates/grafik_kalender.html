@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block nav_rekap %}{% if user.is_superuser %}active{% endif %}{% endblock %}
+{% block nav_grafik %}active{% endblock %}
 
 {% block content %}
 <div class="page-header fade">
@@ -7,7 +7,9 @@
     <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
             <h1 class="page-title">Grafik & Kalender</h1>
-            <p class="page-subtitle">Visualisasi kehadiran dan deadline tugas</p>
+            <p class="page-subtitle">
+                {% if user.is_superuser %}Visualisasi kehadiran kelas dan deadline tugas{% else %}Pantau kehadiranmu dan jangan kelewat deadline{% endif %}
+            </p>
         </div>
     </div>
 </div>

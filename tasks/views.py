@@ -499,22 +499,24 @@ def kalender_data(request):
 
     tugas_qs = Tugas.objects.select_related('mata_kuliah').order_by('deadline')
 
+    # FIX N+1: ambil semua submission user sekaligus, bukan per tugas
+    if not request.user.is_superuser:
+        submitted_ids = set(
+            TugasSubmission.objects.filter(user=request.user)
+            .values_list('tugas_id', flat=True)
+        )
+    else:
+        submitted_ids = set()
+
     events = []
     for t in tugas_qs:
-        submission = None
-        if not request.user.is_superuser:
-            try:
-                submission = t.submissions.get(user=request.user)
-            except Exception:
-                pass
-
         events.append({
             'id': t.pk,
             'title': t.judul,
             'mk': t.mata_kuliah.nama,
             'deadline': t.deadline.strftime('%Y-%m-%dT%H:%M'),
             'expired': t.is_expired,
-            'submitted': submission is not None,
+            'submitted': t.pk in submitted_ids,
             'url': f'/tugas/{t.pk}/',
         })
 
