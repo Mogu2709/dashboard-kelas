@@ -103,38 +103,149 @@ def dashboard_view(request):
         logout(request)
         return redirect('pending_approval')
 
-    total_pertemuan = Pertemuan.objects.count()
-    total_hadir = Attendance.objects.filter(user=request.user).count()
-    persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+    # ── Data pending users (untuk alert) ──────────────────────────────────────
+    from .models import UserProfile as UP
+    pending_users = UP.objects.filter(status='pending').select_related('user') if request.user.is_superuser else []
 
-    # Tugas aktif & materi untuk quick links di dashboard
-    try:
+    if request.user.is_superuser:
+        # ══════════════════════════════════════════════════════════════════════
+        # DASHBOARD KETUA KELAS
+        # ══════════════════════════════════════════════════════════════════════
+        from django.db.models import Count, Avg, Q
+        from tasks.models import Tugas, TugasSubmission, Notifikasi
+        from attendance.models import Pertemuan, Attendance, MataKuliah
+
+        total_mahasiswa  = User.objects.filter(is_superuser=False, profile__status='approved').count()
+        total_pertemuan  = Pertemuan.objects.count()
+
+        # ── Kehadiran kelas ───────────────────────────────────────────────────
+        # Mahasiswa yang kehadirannya di bawah 75%
+        mahasiswa_qs = User.objects.filter(is_superuser=False, profile__status='approved').annotate(
+            total_hadir=Count('attendance')
+        )
+        absen_parah = []
+        for mhs in mahasiswa_qs:
+            persen = round((mhs.total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+            if persen < 75:
+                absen_parah.append({
+                    'user': mhs,
+                    'total_hadir': mhs.total_hadir,
+                    'persentase': persen,
+                })
+        absen_parah.sort(key=lambda x: x['persentase'])
+
+        # Rata-rata kehadiran kelas
+        total_attendance = Attendance.objects.count()
+        rata_hadir = round((total_attendance / (total_pertemuan * total_mahasiswa)) * 100, 1) \
+            if total_pertemuan > 0 and total_mahasiswa > 0 else 0
+
+        # ── Tugas ─────────────────────────────────────────────────────────────
+        from django.utils import timezone
+        now = timezone.now()
+        tugas_aktif_qs = Tugas.objects.filter(deadline__gt=now).select_related('mata_kuliah').order_by('deadline')[:5]
+
+        # Submission yang belum dinilai
+        belum_dinilai = TugasSubmission.objects.filter(nilai__isnull=True).count()
+
+        # Tugas yang deadline-nya dalam 3 hari
+        deadline_dekat = Tugas.objects.filter(
+            deadline__gt=now,
+            deadline__lte=now + timezone.timedelta(days=3)
+        ).count()
+
+        # ── Statistik nilai kelas ─────────────────────────────────────────────
+        nilai_stats = TugasSubmission.objects.filter(nilai__isnull=False).aggregate(
+            rata=Avg('nilai'),
+            total=Count('id'),
+        )
+        rata_nilai_kelas = round(float(nilai_stats['rata']), 1) if nilai_stats['rata'] else None
+
+        # Distribusi grade
+        distribusi_grade = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0}
+        for sub in TugasSubmission.objects.filter(nilai__isnull=False).values_list('nilai', flat=True):
+            n = float(sub)
+            if n >= 85: distribusi_grade['A'] += 1
+            elif n >= 75: distribusi_grade['B'] += 1
+            elif n >= 65: distribusi_grade['C'] += 1
+            elif n >= 55: distribusi_grade['D'] += 1
+            else: distribusi_grade['E'] += 1
+
+        # ── Pertemuan aktif sekarang ───────────────────────────────────────────
+        pertemuan_aktif = Pertemuan.objects.filter(batas_absen__gt=now).select_related('mata_kuliah').first()
+
+        # ── Notifikasi unread ─────────────────────────────────────────────────
+        notif_unread = Notifikasi.objects.filter(user=request.user, dibaca=False).count()
+
+        # ── Pertemuan 5 terbaru ────────────────────────────────────────────────
+        pertemuan_terbaru = Pertemuan.objects.select_related('mata_kuliah').order_by('-tanggal')[:5]
+        pertemuan_terbaru_data = []
+        for pt in pertemuan_terbaru:
+            jumlah_hadir = Attendance.objects.filter(pertemuan=pt).count()
+            persen_hadir = round((jumlah_hadir / total_mahasiswa) * 100) if total_mahasiswa > 0 else 0
+            pertemuan_terbaru_data.append({
+                'pertemuan': pt,
+                'jumlah_hadir': jumlah_hadir,
+                'persen_hadir': persen_hadir,
+            })
+
+        context = {
+            'is_ketua': True,
+            'pending_users': pending_users,
+            # Stats utama
+            'total_mahasiswa': total_mahasiswa,
+            'total_pertemuan': total_pertemuan,
+            'rata_hadir': rata_hadir,
+            'belum_dinilai': belum_dinilai,
+            'deadline_dekat': deadline_dekat,
+            'rata_nilai_kelas': rata_nilai_kelas,
+            # Alerts
+            'absen_parah': absen_parah[:5],  # max 5
+            'absen_parah_count': len(absen_parah),
+            # Tugas
+            'tugas_aktif_qs': tugas_aktif_qs,
+            # Nilai
+            'distribusi_grade': distribusi_grade,
+            'total_dinilai': nilai_stats['total'] or 0,
+            # Pertemuan
+            'pertemuan_aktif': pertemuan_aktif,
+            'pertemuan_terbaru': pertemuan_terbaru_data,
+            # Notif
+            'notif_unread': notif_unread,
+        }
+
+    else:
+        # ══════════════════════════════════════════════════════════════════════
+        # DASHBOARD MAHASISWA (tidak berubah)
+        # ══════════════════════════════════════════════════════════════════════
+        from attendance.models import Pertemuan, Attendance
         from tasks.models import Tugas, Materi, Notifikasi
+
+        total_pertemuan = Pertemuan.objects.count()
+        total_hadir = Attendance.objects.filter(user=request.user).count()
+        persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
         tugas_aktif = Tugas.objects.filter(deadline__gt=timezone.now()).count()
         total_materi = Materi.objects.count()
         notif_unread = Notifikasi.objects.filter(user=request.user, dibaca=False).count()
-    except Exception:
-        tugas_aktif = 0
-        total_materi = 0
-        notif_unread = 0
 
-    # Pertemuan terbaru (5 terakhir) untuk quick view di dashboard
-    pertemuan_terbaru = Pertemuan.objects.order_by('-tanggal')[:5]
-    hadir_ids = Attendance.objects.filter(
-        user=request.user,
-        pertemuan__in=pertemuan_terbaru
-    ).values_list('pertemuan_id', flat=True)
+        pertemuan_terbaru = Pertemuan.objects.order_by('-tanggal')[:5]
+        hadir_ids = Attendance.objects.filter(
+            user=request.user,
+            pertemuan__in=pertemuan_terbaru
+        ).values_list('pertemuan_id', flat=True)
 
-    context = {
-        'total_pertemuan': total_pertemuan,
-        'total_hadir': total_hadir,
-        'persentase': persentase,
-        'tugas_aktif': tugas_aktif,
-        'total_materi': total_materi,
-        'notif_unread': notif_unread,
-        'pertemuan_terbaru': pertemuan_terbaru,
-        'hadir_ids': list(hadir_ids),
-    }
+        context = {
+            'is_ketua': False,
+            'pending_users': [],
+            'total_pertemuan': total_pertemuan,
+            'total_hadir': total_hadir,
+            'persentase': persentase,
+            'tugas_aktif': tugas_aktif,
+            'total_materi': total_materi,
+            'notif_unread': notif_unread,
+            'pertemuan_terbaru': pertemuan_terbaru,
+            'hadir_ids': list(hadir_ids),
+        }
+
     return render(request, 'dashboard.html', context)
 
 
