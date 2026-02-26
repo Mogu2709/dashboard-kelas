@@ -436,7 +436,7 @@ overlay.addEventListener('click', closeSidebar);
 // ── Profile Dropdown ──
 const profileBtn      = document.getElementById('profile-btn');
 const profileDropdown = document.getElementById('profile-dropdown');
-function closeAllDropdowns() { profileDropdown.classList.remove('open'); notifDropdown.classList.remove('open'); document.getElementById('notif-overlay').classList.remove('active'); }
+function closeAllDropdowns() { profileDropdown.classList.remove('open'); closeNotif(); }
 profileBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     notifDropdown.classList.remove('open');
@@ -454,18 +454,26 @@ const CSRF_TOKEN = '{{ csrf_token }}';
 
 const notifOverlay = document.getElementById('notif-overlay');
 
-notifBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
+function openNotif() {
     profileDropdown.classList.remove('open');
-    const willOpen = !notifDropdown.classList.contains('open');
-    notifDropdown.classList.toggle('open');
-    notifOverlay.classList.toggle('active', willOpen);
-    if (willOpen) loadNotif();
-});
+    notifDropdown.classList.add('open');
+    notifOverlay.classList.add('active');
+    loadNotif();
+}
 
-notifOverlay.addEventListener('click', () => {
+function closeNotif() {
     notifDropdown.classList.remove('open');
     notifOverlay.classList.remove('active');
+}
+
+notifBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notifDropdown.classList.contains('open') ? closeNotif() : openNotif();
+});
+
+notifOverlay.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeNotif();
 });
 
 document.addEventListener('click', (e) => {
