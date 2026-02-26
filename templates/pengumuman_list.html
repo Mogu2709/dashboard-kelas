@@ -6,48 +6,53 @@
     /* ── Card ── */
     .p-card {
         border: 1px solid #e9e9e7;
-        border-radius: 10px;
+        border-radius: 12px;
         background: white;
-        transition: border-color 0.15s;
+        transition: border-color 0.15s, box-shadow 0.15s;
         overflow: hidden;
     }
-    .p-card:hover { border-color: #d4d4d0; }
+    .p-card:hover { border-color: #d4d4d0; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
     .p-card.unread { border-left: 3px solid #1a1a1a; }
     .p-card.pinned-card { border-top: 2px solid #1a1a1a; }
 
-    /* ── Prioritas ── */
-    .dot { width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0; }
-    .dot-normal { background:#9b9b9b; }
-    .dot-penting { background:#d97706; }
-    .dot-urgent  { background:#dc2626; }
+    /* ── Prioritas badge ── */
+    .badge-prioritas {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 2px 8px; border-radius: 5px; font-size: 11.5px; font-weight: 500;
+    }
+    .badge-normal  { background: #f7f7f5; color: #6b6b6b; border: 1px solid #e9e9e7; }
+    .badge-penting { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .badge-urgent  { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .badge-new     { background: #1a1a1a; color: white; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+    .badge-pinned  { background: #f7f7f5; color: #6b6b6b; border: 1px solid #e9e9e7; padding: 2px 8px; border-radius: 5px; font-size: 11.5px; }
 
     /* ── Attachments ── */
-    .attach-grid { display:flex;flex-wrap:wrap;gap:8px;margin-top:12px; }
+    .attach-grid { display:flex;flex-wrap:wrap;gap:8px;margin-top:14px; }
     .attach-img {
-        width:120px;height:90px;object-fit:cover;border-radius:6px;
-        border:1px solid #e9e9e7;cursor:pointer;transition:opacity 0.15s;
+        width:130px;height:96px;object-fit:cover;border-radius:8px;
+        border:1px solid #e9e9e7;cursor:pointer;transition:opacity 0.15s, transform 0.15s;
     }
-    .attach-img:hover { opacity:0.85; }
+    .attach-img:hover { opacity:0.85; transform: scale(1.02); }
     .attach-video {
-        width:100%;max-width:480px;border-radius:8px;
+        width:100%;max-width:500px;border-radius:10px;
         border:1px solid #e9e9e7;
     }
     .attach-file {
         display:inline-flex;align-items:center;gap:8px;
-        padding:8px 12px;border:1px solid #e9e9e7;border-radius:6px;
+        padding:8px 14px;border:1px solid #e9e9e7;border-radius:8px;
         font-size:13px;color:#374151;text-decoration:none;
-        background:#f7f7f5;transition:background 0.1s;
+        background:#f7f7f5;transition:background 0.1s, border-color 0.1s;
     }
-    .attach-file:hover { background:#efefed; }
+    .attach-file:hover { background:#efefed; border-color: #d4d4d0; }
     .yt-embed {
-        width:100%;max-width:480px;aspect-ratio:16/9;
-        border-radius:8px;border:none;
+        width:100%;max-width:500px;aspect-ratio:16/9;
+        border-radius:10px;border:none;
     }
 
     /* ── Like ── */
     .like-btn {
         display:inline-flex;align-items:center;gap:5px;
-        padding:5px 10px;border-radius:6px;border:1px solid #e9e9e7;
+        padding:5px 11px;border-radius:7px;border:1px solid #e9e9e7;
         background:none;cursor:pointer;font-size:13px;color:#6b6b6b;
         font-family:'Geist',sans-serif;transition:all 0.15s;
     }
@@ -57,31 +62,51 @@
     /* ── Action btns ── */
     .action-btn {
         display:inline-flex;align-items:center;gap:5px;
-        padding:5px 10px;border-radius:6px;border:1px solid #e9e9e7;
+        padding:5px 11px;border-radius:7px;border:1px solid #e9e9e7;
         background:none;cursor:pointer;font-size:13px;color:#6b6b6b;
         font-family:'Geist',sans-serif;transition:all 0.15s;text-decoration:none;
     }
-    .action-btn:hover { background:#f7f7f5;color:#1a1a1a; }
+    .action-btn:hover { background:#f7f7f5;color:#1a1a1a; border-color:#d4d4d0; }
     .action-btn.danger:hover { background:#fef2f2;border-color:#fecaca;color:#e03e3e; }
 
-    /* ── Comments ── */
-    .comment-section { border-top:1px solid #f7f7f5;padding:16px 22px;background:#fafaf8; }
-    .comment-item {
-        display:flex;gap:10px;margin-bottom:14px;
+    /* ── Card footer actions ── */
+    .card-footer {
+        display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+        padding: 12px 22px 14px;
+        border-top: 1px solid #f0f0ee;
+        background: #fafaf8;
     }
+    .card-footer-right { margin-left: auto; display:flex; gap:8px; align-items:center; }
+
+    /* ── Author chip ── */
+    .author-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 12px; color: #9b9b9b;
+    }
+    .author-avatar {
+        width: 20px; height: 20px; border-radius: 4px;
+        background: #e9e9e7; color: #6b6b6b;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 10px; font-weight: 700;
+    }
+
+    /* ── Comments ── */
+    .comment-section {
+        border-top: 1px solid #f0f0ee;
+        padding: 16px 22px 20px;
+        background: #fafaf8;
+    }
+    .comment-item { display:flex;gap:10px;margin-bottom:14px; }
     .comment-avatar {
-        width:28px;height:28px;border-radius:6px;background:#1a1a1a;
+        width:28px;height:28px;border-radius:7px;background:#1a1a1a;
         color:white;display:flex;align-items:center;justify-content:center;
         font-size:11px;font-weight:700;flex-shrink:0;
-        font-family:'Lora',serif;
     }
     .comment-bubble {
         flex:1;background:white;border:1px solid #e9e9e7;
-        border-radius:8px;padding:10px 14px;
+        border-radius:9px;padding:10px 14px;
     }
-    .comment-bubble.reply-bubble {
-        background:#f7f7f5;
-    }
+    .comment-bubble.reply-bubble { background:#f7f7f5; border-color:#efefed; }
     .reply-thread { margin-left:38px;margin-top:8px; }
     .comment-input {
         width:100%;border:1px solid #e9e9e7;border-radius:8px;
@@ -89,31 +114,41 @@
         font-family:'Geist',sans-serif;color:#1a1a1a;
         transition:border-color 0.15s;background:white;
     }
-    .comment-input:focus { border-color:#1a1a1a;box-shadow:0 0 0 2px rgba(26,26,26,0.06); }
+    .comment-input:focus { border-color:#1a1a1a;box-shadow:0 0 0 3px rgba(26,26,26,0.06); }
     .send-btn {
         padding:7px 14px;background:#1a1a1a;color:white;border:none;
-        border-radius:6px;font-size:13px;cursor:pointer;font-family:'Geist',sans-serif;
-        transition:background 0.15s;
+        border-radius:7px;font-size:13px;cursor:pointer;font-family:'Geist',sans-serif;
+        transition:background 0.15s; white-space:nowrap;
     }
     .send-btn:hover { background:#333; }
 
     /* ── Lightbox ── */
     .lightbox {
-        display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+        display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);
         z-index:9999;align-items:center;justify-content:center;
     }
     .lightbox.open { display:flex; }
-    .lightbox img { max-width:90vw;max-height:90vh;border-radius:8px; }
+    .lightbox img { max-width:90vw;max-height:90vh;border-radius:10px; }
     .lightbox-close {
-        position:absolute;top:20px;right:28px;color:white;font-size:28px;
-        cursor:pointer;opacity:0.7;transition:opacity 0.15s;
+        position:absolute;top:20px;right:28px;color:white;font-size:26px;
+        cursor:pointer;opacity:0.6;transition:opacity 0.15s;background:none;border:none;
+        font-family:'Geist',sans-serif; width:36px;height:36px;
+        display:flex;align-items:center;justify-content:center;
+        border-radius:8px;
     }
-    .lightbox-close:hover { opacity:1; }
+    .lightbox-close:hover { opacity:1; background:rgba(255,255,255,0.1); }
+
+    /* ── Empty state ── */
+    .empty-state {
+        text-align:center; padding:64px 40px;
+        border: 1px dashed #e9e9e7; border-radius:12px;
+        color: #9b9b9b;
+    }
 </style>
 
 <!-- Header -->
 <div class="page-header fade">
-    <span class="page-emoji">🔔</span>
+    <span class="page-emoji">📢</span>
     <h1 class="page-title">Pengumuman</h1>
     <p class="page-subtitle">
         {% if belum_dibaca > 0 %}<span style="color:#e03e3e;font-weight:500;">{{ belum_dibaca }} belum dibaca</span> · {% endif %}
@@ -124,7 +159,7 @@
 <div class="page-content">
 
     <!-- Toolbar -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;" class="fade fade-1">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px;" class="fade fade-1">
         <div>
             {% if belum_dibaca > 0 %}
             <a href="{% url 'tandai_semua_dibaca' %}" class="btn btn-secondary" style="font-size:13px;">✓ Tandai Semua Dibaca</a>
@@ -136,36 +171,40 @@
     </div>
 
     <!-- List -->
-    <div style="display:flex;flex-direction:column;gap:12px;" class="fade fade-2">
+    <div style="display:flex;flex-direction:column;gap:14px;" class="fade fade-2">
     {% for p in pengumuman_list %}
     <div class="p-card {% if p.id not in dibaca_ids %}unread{% endif %} {% if p.pinned %}pinned-card{% endif %}" id="post-{{ p.id }}">
 
         <!-- Body -->
-        <div style="padding:18px 22px;">
+        <div style="padding:20px 22px 16px;">
 
-            <!-- Meta -->
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-                {% if p.pinned %}<span style="font-size:11px;color:#6b6b6b;background:#f7f7f5;border:1px solid #e9e9e7;padding:2px 7px;border-radius:4px;">📌 Pinned</span>{% endif %}
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;">
-                    <span class="dot dot-{{ p.prioritas }}"></span>
-                    {% if p.prioritas == 'urgent' %}<span style="color:#dc2626;">Urgent</span>
-                    {% elif p.prioritas == 'penting' %}<span style="color:#d97706;">Penting</span>
-                    {% else %}<span style="color:#9b9b9b;">Normal</span>{% endif %}
-                </span>
-                {% if p.id not in dibaca_ids %}
-                <span style="font-size:11px;font-weight:600;background:#1a1a1a;color:white;padding:2px 7px;border-radius:4px;">Baru</span>
+            <!-- Meta row -->
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+                {% if p.pinned %}<span class="badge-pinned">📌 Pinned</span>{% endif %}
+
+                {% if p.prioritas == 'urgent' %}
+                <span class="badge-prioritas badge-urgent">🔴 Urgent</span>
+                {% elif p.prioritas == 'penting' %}
+                <span class="badge-prioritas badge-penting">🟡 Penting</span>
+                {% else %}
+                <span class="badge-prioritas badge-normal">Normal</span>
                 {% endif %}
+
+                {% if p.id not in dibaca_ids %}
+                <span class="badge-new">Baru</span>
+                {% endif %}
+
                 <span style="font-size:12px;color:#c4c4c0;font-family:'IBM Plex Mono',monospace;margin-left:auto;">
                     {{ p.dibuat_pada|date:"d M Y, H:i" }}
-                    {% if p.is_edited %}<span style="color:#d4d4d0;"> · diedit</span>{% endif %}
+                    {% if p.is_edited %} · <span style="color:#d4d4d0;">diedit</span>{% endif %}
                 </span>
             </div>
 
             <!-- Title -->
-            <div style="font-size:17px;font-weight:600;color:#1a1a1a;margin-bottom:8px;font-family:'Lora',serif;">{{ p.judul }}</div>
+            <div style="font-size:18px;font-weight:600;color:#1a1a1a;margin-bottom:9px;font-family:'Lora',serif;line-height:1.4;">{{ p.judul }}</div>
 
             <!-- Isi -->
-            <div style="font-size:14px;color:#4b4b4b;line-height:1.7;white-space:pre-line;margin-bottom:12px;">{{ p.isi }}</div>
+            <div style="font-size:14px;color:#4b4b4b;line-height:1.75;white-space:pre-line;">{{ p.isi }}</div>
 
             <!-- Attachments -->
             {% if p.attachments.all or p.embed_url %}
@@ -205,8 +244,11 @@
             {% endif %}
 
             <!-- Footer actions -->
-            <div style="display:flex;align-items:center;gap:8px;margin-top:16px;flex-wrap:wrap;padding-top:14px;border-top:1px solid #f7f7f5;">
-                <span style="font-size:12px;color:#c4c4c0;">oleh <strong style="color:#9b9b9b;">{{ p.dibuat_oleh.username }}</strong></span>
+            <div class="card-footer">
+                <div class="author-chip">
+                    <div class="author-avatar">{{ p.dibuat_oleh.username|slice:":1"|upper }}</div>
+                    <span>{{ p.dibuat_oleh.username }}</span>
+                </div>
 
                 <!-- Like -->
                 <button class="like-btn {% if p.id in liked_ids %}liked{% endif %}"
@@ -224,15 +266,19 @@
                 {% if p.id not in dibaca_ids %}
                 <a href="{% url 'tandai_dibaca' p.id %}" class="action-btn">✓ Tandai Dibaca</a>
                 {% else %}
-                <span style="font-size:12px;color:#1a7f4b;">✓ Dibaca</span>
+                <span style="font-size:12px;color:#1a7f4b;display:inline-flex;align-items:center;gap:4px;">
+                    <span>✓</span> Dibaca
+                </span>
                 {% endif %}
 
                 {% if user.is_superuser %}
-                <a href="{% url 'edit_pengumuman' p.id %}" class="action-btn" style="margin-left:auto;">✏️ Edit</a>
-                <form method="post" action="{% url 'hapus_pengumuman' p.id %}" style="display:inline;" onsubmit="return confirm('Hapus pengumuman ini?')">
-                    {% csrf_token %}
-                    <button type="submit" class="action-btn danger">🗑️ Hapus</button>
-                </form>
+                <div class="card-footer-right">
+                    <a href="{% url 'edit_pengumuman' p.id %}" class="action-btn">✏️ Edit</a>
+                    <form method="post" action="{% url 'hapus_pengumuman' p.id %}" style="display:inline;" onsubmit="return confirm('Hapus pengumuman ini?')">
+                        {% csrf_token %}
+                        <button type="submit" class="action-btn danger">🗑️ Hapus</button>
+                    </form>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -314,9 +360,9 @@
 
     </div>
     {% empty %}
-    <div style="text-align:center;padding:56px;border:1px solid #e9e9e7;border-radius:10px;color:#9b9b9b;">
-        <div style="font-size:32px;margin-bottom:10px;">🔔</div>
-        <div style="font-size:14px;font-weight:500;color:#6b6b6b;margin-bottom:4px;">Belum ada pengumuman</div>
+    <div class="empty-state">
+        <div style="font-size:36px;margin-bottom:12px;">📢</div>
+        <div style="font-size:15px;font-weight:600;color:#4b4b4b;margin-bottom:6px;">Belum ada pengumuman</div>
         <div style="font-size:13px;">Pengumuman dari ketua kelas akan muncul di sini</div>
     </div>
     {% endfor %}
@@ -325,8 +371,8 @@
 
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <span class="lightbox-close" onclick="closeLightbox()">✕</span>
-    <img src="" id="lightbox-img" alt="">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img src="" id="lightbox-img" alt="" onclick="event.stopPropagation()">
 </div>
 
 <script>
