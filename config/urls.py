@@ -4,8 +4,11 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 
-# Import dashboard_view langsung di sini
 from accounts.views import dashboard_view
+
+# ── Custom error handlers ─────────────────────────────────────────────────────
+handler404 = 'config.views.error_404'
+handler500 = 'config.views.error_500'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
