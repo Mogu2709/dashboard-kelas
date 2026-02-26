@@ -381,3 +381,141 @@ def hapus_materi(request, pk):
         messages.success(request, f'🗑️ Materi "{nama}" berhasil dihapus.')
         return redirect('materi_list')
     return render(request, 'konfirmasi_hapus.html', {'obj': materi, 'tipe': 'materi'})
+
+# ─── SEARCH ───────────────────────────────────────────────────────────────────
+
+@login_required
+def search(request):
+    q = request.GET.get('q', '').strip()
+    results = {'tugas': [], 'materi': [], 'query': q}
+
+    if len(q) >= 2:
+        from django.db.models import Q as Qfilter
+        now = timezone.now()
+
+        tugas_qs = (
+            Tugas.objects
+            .filter(Qfilter(judul__icontains=q) | Qfilter(deskripsi__icontains=q))
+            .select_related('mata_kuliah')
+            .order_by('deadline')[:8]
+        )
+        for t in tugas_qs:
+            results['tugas'].append({
+                'id': t.pk,
+                'judul': t.judul,
+                'mk': t.mata_kuliah.nama,
+                'deadline': t.deadline.strftime('%d %b %Y'),
+                'expired': t.is_expired,
+                'url': f'/tugas/{t.pk}/',
+            })
+
+        materi_qs = (
+            Materi.objects
+            .filter(Qfilter(judul__icontains=q) | Qfilter(deskripsi__icontains=q))
+            .select_related('mata_kuliah')
+            .order_by('-diunggah_pada')[:8]
+        )
+        for m in materi_qs:
+            results['materi'].append({
+                'id': m.pk,
+                'judul': m.judul,
+                'mk': m.mata_kuliah.nama,
+                'ekstensi': m.ekstensi or '',
+                'url': m.file.url if m.file else '',
+            })
+
+    return JsonResponse(results)
+
+
+# ─── HALAMAN GRAFIK & KALENDER ───────────────────────────────────────────────
+
+@login_required
+def grafik_kalender_page(request):
+    return render(request, 'grafik_kalender.html')
+
+
+# ─── GRAFIK KEHADIRAN ─────────────────────────────────────────────────────────
+
+@login_required
+def grafik_kehadiran(request):
+    """API: data kehadiran per minggu untuk grafik."""
+    from attendance.models import Pertemuan, Attendance
+    from django.db.models import Count
+    from django.db.models.functions import TruncWeek
+
+    if request.user.is_superuser:
+        # Superuser: rata-rata kehadiran kelas per minggu
+        total_mahasiswa = User.objects.filter(
+            is_superuser=False, profile__status='approved'
+        ).count()
+
+        data = (
+            Attendance.objects
+            .annotate(minggu=TruncWeek('waktu_hadir'))
+            .values('minggu')
+            .annotate(hadir=Count('id'))
+            .order_by('minggu')
+        )
+        result = []
+        for row in data:
+            persen = round((row['hadir'] / total_mahasiswa) * 100) if total_mahasiswa > 0 else 0
+            result.append({
+                'minggu': row['minggu'].strftime('%d %b'),
+                'hadir': row['hadir'],
+                'persen': min(persen, 100),
+            })
+    else:
+        # Mahasiswa: kehadiran diri sendiri — per pertemuan (max 20 terakhir)
+        pertemuan_qs = (
+            Pertemuan.objects
+            .select_related('mata_kuliah')
+            .order_by('tanggal')
+        )
+        hadir_ids = set(
+            Attendance.objects.filter(user=request.user)
+            .values_list('pertemuan_id', flat=True)
+        )
+        result = []
+        hadir_count = 0
+        for i, pt in enumerate(pertemuan_qs, 1):
+            hadir_count += 1 if pt.id in hadir_ids else 0
+            result.append({
+                'label': f'P{i}',
+                'mk': pt.mata_kuliah.nama,
+                'hadir': 1 if pt.id in hadir_ids else 0,
+                'kumulatif': round((hadir_count / i) * 100, 1),
+            })
+
+    return JsonResponse({'data': result})
+
+
+# ─── KALENDER DEADLINE ────────────────────────────────────────────────────────
+
+@login_required
+def kalender_data(request):
+    """API: semua deadline tugas untuk kalender."""
+    from django.db.models import Q as Qf
+    now = timezone.now()
+
+    tugas_qs = Tugas.objects.select_related('mata_kuliah').order_by('deadline')
+
+    events = []
+    for t in tugas_qs:
+        submission = None
+        if not request.user.is_superuser:
+            try:
+                submission = t.submissions.get(user=request.user)
+            except Exception:
+                pass
+
+        events.append({
+            'id': t.pk,
+            'title': t.judul,
+            'mk': t.mata_kuliah.nama,
+            'deadline': t.deadline.strftime('%Y-%m-%dT%H:%M'),
+            'expired': t.is_expired,
+            'submitted': submission is not None,
+            'url': f'/tugas/{t.pk}/',
+        })
+
+    return JsonResponse({'events': events, 'now': now.strftime('%Y-%m-%dT%H:%M')})
