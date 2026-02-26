@@ -456,18 +456,19 @@
             <a href="{% url 'buat_pertemuan' %}" class="nav-item {% block nav_buat %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">＋</span> Buat Pertemuan
             </a>
-            <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}" onclick="closeSidebar()">
-                <span class="nav-icon">📊</span> Rekap Mahasiswa
-            </a>
-            <a href="{% url 'kelola_user' %}" class="nav-item {% block nav_kelola_user %}{% endblock %}" onclick="closeSidebar()">
-                <span class="nav-icon">👥</span> Kelola User
-            </a>
             <a href="{% url 'buat_tugas' %}" class="nav-item {% block nav_buat_tugas %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">＋</span> Buat Tugas
             </a>
             <a href="{% url 'unggah_materi' %}" class="nav-item {% block nav_unggah_materi %}{% endblock %}" onclick="closeSidebar()">
                 <span class="nav-icon">⬆️</span> Unggah Materi
             </a>
+            <a href="{% url 'rekap_mahasiswa' %}" class="nav-item {% block nav_rekap %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">📊</span> Rekap Mahasiswa
+            </a>
+            <a href="{% url 'kelola_user' %}" class="nav-item {% block nav_kelola_user %}{% endblock %}" onclick="closeSidebar()">
+                <span class="nav-icon">👥</span> Kelola User
+            </a>
+            
         </div>
         {% endif %}
     </div>
