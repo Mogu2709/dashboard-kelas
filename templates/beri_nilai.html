@@ -1,358 +1,138 @@
-{% extends "base.html" %}
-{% block nav_tugas %}active{% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}Beri Nilai – {{ submission.tugas.judul }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div style="margin-bottom:10px;">
-        <a href="{% url 'tugas_list' %}" style="font-size:13px;color:var(--text-secondary);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-            ← Kembali ke Tugas
-        </a>
-    </div>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-        <div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                <h1 class="page-title" style="font-size:22px;">{{ tugas.judul }}</h1>
-                {% if tugas.is_expired %}
-                    <span class="chip chip-gray">Selesai</span>
-                {% else %}
-                    <span class="chip chip-green">Aktif</span>
-                {% endif %}
-            </div>
-            <p class="page-subtitle">{{ tugas.mata_kuliah.nama }}</p>
-        </div>
-        {% if user.is_superuser %}
-        <div style="display:flex;gap:8px;">
-            <a href="{% url 'edit_tugas' tugas.pk %}" class="btn btn-secondary">✏️ Edit</a>
-            <form method="post" action="{% url 'hapus_tugas' tugas.pk %}" onsubmit="return confirm('Yakin hapus tugas ini? Semua submission akan terhapus juga.')">
-                {% csrf_token %}
-                <button type="submit" class="btn" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;">🗑️ Hapus</button>
-            </form>
-        </div>
-        {% endif %}
-    </div>
-</div>
+<div class="max-w-2xl mx-auto px-4 py-8">
 
-<div class="page-content">
+  <!-- Breadcrumb -->
+  <div class="text-sm text-gray-500 mb-6">
+    <a href="{% url 'tugas_list' %}" class="hover:text-blue-600">Tugas</a>
+    <span class="mx-2">/</span>
+    <a href="{% url 'detail_tugas' submission.tugas.pk %}" class="hover:text-blue-600">{{ submission.tugas.judul }}</a>
+    <span class="mx-2">/</span>
+    <span>Beri Nilai</span>
+  </div>
 
-    <!-- Messages -->
-    {% if messages %}
-    {% for message in messages %}
-    <div style="padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;
-        {% if message.tags == 'success' %}background:#eefaf4;border:1px solid #c3e9d2;color:#1a7f4b;
-        {% elif message.tags == 'error' %}background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
-        {% else %}background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;{% endif %}">
-        {{ message }}
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5">
+      <h1 class="text-xl font-bold text-white">📝 Beri Nilai</h1>
+      <p class="text-blue-100 text-sm mt-1">{{ submission.tugas.judul }}</p>
     </div>
-    {% endfor %}
+
+    <!-- Info Mahasiswa -->
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-4">
+      <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">
+        {{ submission.user.username|first|upper }}
+      </div>
+      <div>
+        <p class="font-semibold text-gray-800">{{ submission.user.get_full_name|default:submission.user.username }}</p>
+        <p class="text-xs text-gray-500">
+          Dikumpulkan {{ submission.dikumpulkan_pada|date:"d M Y, H:i" }}
+          {% if submission.terlambat %}
+            <span class="ml-1 text-red-500 font-medium">· Terlambat</span>
+          {% endif %}
+        </p>
+      </div>
+      <!-- File jawaban -->
+      {% if submission.file_jawaban %}
+      <a href="{{ submission.file_jawaban.url }}"
+         target="_blank"
+         class="ml-auto flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
+        📎 {{ submission.nama_file|default:"Lihat File" }}
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Catatan mahasiswa -->
+    {% if submission.catatan %}
+    <div class="px-6 py-3 bg-yellow-50 border-b border-yellow-100">
+      <p class="text-xs text-yellow-700 font-medium mb-1">Catatan dari mahasiswa:</p>
+      <p class="text-sm text-gray-700">{{ submission.catatan }}</p>
+    </div>
     {% endif %}
 
-    <div style="display:grid;grid-template-columns:1fr 320px;gap:24px;" id="layout-grid">
+    <!-- Form Nilai -->
+    <form method="post" class="px-6 py-6 space-y-5">
+      {% csrf_token %}
 
-        <!-- LEFT: Info tugas -->
-        <div>
-            <!-- Detail Card -->
-            <div class="notion-card fade fade-1" style="padding:24px;margin-bottom:20px;">
-                <h3 style="font-size:13px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;">Detail Tugas</h3>
-
-                <!-- Deadline -->
-                <div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;">
-                    <span style="font-size:16px;margin-top:1px;">⏰</span>
-                    <div>
-                        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:2px;">Deadline</div>
-                        <div style="font-size:14px;font-weight:500;color:{% if tugas.is_expired %}var(--text-secondary){% else %}#b91c1c{% endif %};">
-                            {{ tugas.deadline|date:"l, d F Y — H:i" }} WIB
-                        </div>
-                        {% if not tugas.is_expired and tugas.sisa_waktu %}
-                        <div style="font-size:12px;color:#854d0e;margin-top:2px;">⌛ Sisa waktu: {{ tugas.sisa_waktu }}</div>
-                        {% elif tugas.is_expired %}
-                        <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">Deadline sudah lewat</div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Dibuat oleh -->
-                <div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;">
-                    <span style="font-size:16px;margin-top:1px;">👤</span>
-                    <div>
-                        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:2px;">Dibuat oleh</div>
-                        <div style="font-size:14px;">{{ tugas.dibuat_oleh.profile.display_name }}</div>
-                        <div style="font-size:12px;color:var(--text-tertiary);">{{ tugas.dibuat_pada|date:"d M Y, H:i" }}</div>
-                    </div>
-                </div>
-
-                <!-- File Soal -->
-                {% if tugas.file_soal %}
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                    <span style="font-size:16px;margin-top:1px;">📎</span>
-                    <div>
-                        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:4px;">File Soal</div>
-                        <a href="{{ tugas.file_soal.url }}" target="_blank" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">
-                            ⬇️ {{ tugas.nama_file_soal|default:"Download Soal" }}
-                        </a>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Deskripsi -->
-            {% if tugas.deskripsi %}
-            <div class="notion-card fade fade-2" style="padding:24px;margin-bottom:20px;">
-                <h3 style="font-size:13px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">Instruksi / Deskripsi</h3>
-                <div style="font-size:14px;color:var(--text);line-height:1.7;white-space:pre-line;">{{ tugas.deskripsi }}</div>
-            </div>
+      <!-- Nilai -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Nilai <span class="text-red-500">*</span>
+          <span class="text-gray-400 font-normal">(0–100)</span>
+        </label>
+        <input
+          type="number"
+          name="nilai"
+          min="0" max="100" step="0.01"
+          value="{{ submission.nilai|default:'' }}"
+          required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg font-bold"
+          placeholder="Contoh: 85"
+        >
+        <!-- Preview grade -->
+        <p class="text-xs text-gray-500 mt-1">
+          Grade saat ini:
+          <span class="font-semibold text-gray-700">
+            {% if submission.nilai is not None %}
+              {{ submission.nilai }} → {{ submission.grade_label }}
+            {% else %}
+              Belum dinilai
             {% endif %}
+          </span>
+        </p>
+      </div>
 
-            <!-- SUPERUSER: Daftar Submission -->
-            {% if user.is_superuser %}
-            <div class="notion-card fade fade-3" style="padding:24px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-                    <h3 style="font-size:13px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;">
-                        Submission ({{ submissions.count }})
-                    </h3>
-                </div>
+      <!-- Feedback -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Feedback <span class="text-gray-400 font-normal">(opsional)</span>
+        </label>
+        <textarea
+          name="feedback"
+          rows="4"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+          placeholder="Tulis feedback untuk mahasiswa..."
+        >{{ submission.feedback }}</textarea>
+      </div>
 
-                {% if submissions %}
-                <div style="display:flex;flex-direction:column;gap:10px;">
-                    {% for sub in submissions %}
-                    <div style="padding:14px;border:1px solid var(--border);border-radius:8px;display:flex;gap:12px;align-items:flex-start;">
-                        <!-- Avatar -->
-                        <div style="width:32px;height:32px;border-radius:7px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">
-                            {{ sub.user.profile.inisial }}
-                        </div>
-                        <div style="flex:1;min-width:0;">
-                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap;">
-                                <span style="font-size:13px;font-weight:500;">{{ sub.user.profile.display_name }}</span>
-                                <span style="font-size:11.5px;color:var(--text-tertiary);">{{ sub.user.profile.nim }}</span>
-                                {% if sub.terlambat %}
-                                    <span class="chip chip-yellow" style="font-size:10.5px;">Terlambat</span>
-                                {% else %}
-                                    <span class="chip chip-green" style="font-size:10.5px;">Tepat Waktu</span>
-                                {% endif %}
-                            </div>
-                            <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;">
-                                Dikumpulkan: {{ sub.dikumpulkan_pada|date:"d M Y, H:i" }}
-                            </div>
-                            {% if sub.catatan %}
-                            <div style="font-size:12.5px;color:var(--text-secondary);background:var(--bg-secondary);padding:8px 10px;border-radius:6px;margin-bottom:8px;">
-                                💬 {{ sub.catatan }}
-                            </div>
-                            {% endif %}
-                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;">
-                                <a href="{{ sub.file_jawaban.url }}" target="_blank" class="btn btn-secondary" style="font-size:11.5px;padding:4px 10px;">
-                                    ⬇️ {{ sub.nama_file|default:"Download" }} <span style="color:var(--text-tertiary);">({{ sub.ukuran_display }})</span>
-                                </a>
-                                <a href="{% url 'beri_nilai' sub.pk %}" class="btn btn-primary" style="font-size:11.5px;padding:4px 10px;">
-                                    ✏️ Beri Nilai
-                                </a>
-                            </div>
-                            <!-- Tampilkan nilai jika sudah dinilai -->
-                            {% if sub.nilai is not None %}
-                            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-secondary);border-radius:7px;border:1px solid var(--border);">
-                                <span style="font-size:18px;font-weight:700;color:var(--text);">{{ sub.nilai }}</span>
-                                <span style="font-size:13px;font-weight:600;padding:2px 8px;border-radius:5px;
-                                    {% if sub.grade_label == 'A' %}background:#dcfce7;color:#166534;
-                                    {% elif sub.grade_label == 'B' %}background:#dbeafe;color:#1e40af;
-                                    {% elif sub.grade_label == 'C' %}background:#fef9c3;color:#854d0e;
-                                    {% elif sub.grade_label == 'D' %}background:#ffedd5;color:#9a3412;
-                                    {% else %}background:#fee2e2;color:#991b1b;{% endif %}">
-                                    {{ sub.grade_label }}
-                                </span>
-                                {% if sub.feedback %}
-                                <span style="font-size:12px;color:var(--text-secondary);flex:1;">💬 {{ sub.feedback }}</span>
-                                {% endif %}
-                                <span style="font-size:11px;color:var(--text-tertiary);">{{ sub.dinilai_pada|date:"d M Y" }}</span>
-                            </div>
-                            {% else %}
-                            <div style="margin-top:6px;">
-                                <span style="font-size:11.5px;color:var(--text-tertiary);font-style:italic;">Belum dinilai</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div style="text-align:center;padding:32px;color:var(--text-secondary);font-size:13px;">
-                    <div style="font-size:32px;margin-bottom:8px;">📭</div>
-                    Belum ada yang mengumpulkan tugas ini.
-                </div>
-                {% endif %}
-            </div>
-            {% endif %}
-
+      <!-- Tabel Grade Referensi -->
+      <div class="bg-gray-50 rounded-lg p-3">
+        <p class="text-xs font-medium text-gray-600 mb-2">Konversi Grade:</p>
+        <div class="grid grid-cols-5 gap-1 text-center text-xs">
+          {% for range, grade, color in grade_table %}
+          <div class="rounded px-2 py-1 {{ color }}">
+            <div class="font-bold">{{ grade }}</div>
+            <div class="text-gray-500">{{ range }}</div>
+          </div>
+          {% empty %}
+          <div class="col-span-5 flex gap-2">
+            <span class="flex-1 bg-green-100 text-green-800 rounded px-2 py-1 font-semibold">A ≥ 85</span>
+            <span class="flex-1 bg-blue-100 text-blue-800 rounded px-2 py-1 font-semibold">B ≥ 75</span>
+            <span class="flex-1 bg-yellow-100 text-yellow-800 rounded px-2 py-1 font-semibold">C ≥ 65</span>
+            <span class="flex-1 bg-orange-100 text-orange-800 rounded px-2 py-1 font-semibold">D ≥ 55</span>
+            <span class="flex-1 bg-red-100 text-red-800 rounded px-2 py-1 font-semibold">E &lt; 55</span>
+          </div>
+          {% endfor %}
         </div>
+      </div>
 
-        <!-- RIGHT: Form Submit (Mahasiswa) -->
-        {% if not user.is_superuser %}
-        <div>
-            <div class="notion-card fade fade-2" style="padding:20px;position:sticky;top:calc(var(--topbar-h) + 16px);">
+      <!-- Tombol -->
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+          class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition">
+          💾 Simpan Nilai
+        </button>
+        <a href="{% url 'detail_tugas' submission.tugas.pk %}"
+           class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-4 rounded-lg transition">
+          Batal
+        </a>
+      </div>
+    </form>
 
-                {% if submission %}
-                <!-- Sudah submit -->
-                <div style="text-align:center;padding:12px 0 16px;">
-                    <div style="font-size:32px;margin-bottom:8px;">✅</div>
-                    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">Sudah Dikumpulkan</div>
-                    <div style="font-size:12px;color:var(--text-secondary);">{{ submission.dikumpulkan_pada|date:"d M Y, H:i" }}</div>
-                    {% if submission.terlambat %}
-                    <div style="margin-top:8px;"><span class="chip chip-yellow">Terlambat</span></div>
-                    {% else %}
-                    <div style="margin-top:8px;"><span class="chip chip-green">Tepat Waktu</span></div>
-                    {% endif %}
-                </div>
-
-                <!-- Nilai mahasiswa -->
-                {% if submission.nilai is not None %}
-                <div style="margin-bottom:16px;padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-secondary);text-align:center;">
-                    <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Nilai Kamu</div>
-                    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
-                        <span style="font-size:32px;font-weight:700;color:var(--text);">{{ submission.nilai }}</span>
-                        <span style="font-size:18px;font-weight:700;padding:4px 12px;border-radius:7px;
-                            {% if submission.grade_label == 'A' %}background:#dcfce7;color:#166534;
-                            {% elif submission.grade_label == 'B' %}background:#dbeafe;color:#1e40af;
-                            {% elif submission.grade_label == 'C' %}background:#fef9c3;color:#854d0e;
-                            {% elif submission.grade_label == 'D' %}background:#ffedd5;color:#9a3412;
-                            {% else %}background:#fee2e2;color:#991b1b;{% endif %}">
-                            {{ submission.grade_label }}
-                        </span>
-                    </div>
-                    {% if submission.feedback %}
-                    <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.5;padding:8px 10px;background:var(--bg);border-radius:7px;text-align:left;">
-                        💬 {{ submission.feedback }}
-                    </div>
-                    {% endif %}
-                    <div style="font-size:11px;color:var(--text-tertiary);margin-top:6px;">Dinilai {{ submission.dinilai_pada|date:"d M Y, H:i" }}</div>
-                </div>
-                {% else %}
-                <div style="margin-bottom:16px;padding:10px 12px;border-radius:8px;background:var(--bg-secondary);text-align:center;">
-                    <span style="font-size:12.5px;color:var(--text-tertiary);">⏳ Menunggu penilaian</span>
-                </div>
-                {% endif %}
-                <div class="divider" style="margin-bottom:16px;"></div>
-                <!-- File yang sudah dikumpulkan -->
-                <div style="margin-bottom:16px;">
-                    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;">File yang dikumpulkan:</div>
-                    <a href="{{ submission.file_jawaban.url }}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--border);border-radius:7px;text-decoration:none;color:var(--text);font-size:13px;transition:background 0.1s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
-                        <span>📄</span>
-                        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ submission.nama_file }}</span>
-                        <span style="font-size:11px;color:var(--text-tertiary);">{{ submission.ukuran_display }}</span>
-                    </a>
-                </div>
-                {% if submission.catatan %}
-                <div style="font-size:12.5px;color:var(--text-secondary);background:var(--bg-secondary);padding:8px 10px;border-radius:6px;margin-bottom:16px;">
-                    💬 {{ submission.catatan }}
-                </div>
-                {% endif %}
-                {% endif %}
-
-                <!-- Form Upload (jika belum expire atau sudah submit bisa revisi) -->
-                {% if not tugas.is_expired or submission %}
-                <h3 style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;">
-                    {% if submission %}🔄 Ganti File Jawaban{% else %}📤 Kumpulkan Tugas{% endif %}
-                </h3>
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-
-                    <!-- File upload -->
-                    <div style="margin-bottom:14px;">
-                        <label style="font-size:12.5px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px;">File Jawaban *</label>
-                        <div id="drop-zone" onclick="document.getElementById('id_file_jawaban').click()" style="border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--bg-secondary);" onmouseover="this.style.borderColor='var(--border-hover)';this.style.background='var(--bg-tertiary)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg-secondary)'">
-                            <div style="font-size:24px;margin-bottom:6px;">📁</div>
-                            <div id="drop-label" style="font-size:12.5px;color:var(--text-secondary);">Klik untuk pilih file</div>
-                            <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">PDF, Word, Excel, JPG, PNG, ZIP — maks. 20MB</div>
-                            <input type="file" id="id_file_jawaban" name="file_jawaban" style="display:none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip,.rar" onchange="updateFileLabel(this)">
-                        </div>
-                        {% if form.file_jawaban.errors %}
-                        <div style="color:#b91c1c;font-size:12px;margin-top:4px;">{{ form.file_jawaban.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Catatan -->
-                    <div style="margin-bottom:16px;">
-                        <label style="font-size:12.5px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px;">Catatan (opsional)</label>
-                        <textarea name="catatan" rows="2" placeholder="Catatan tambahan..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:'Geist',sans-serif;resize:vertical;background:var(--bg);color:var(--text);outline:none;" onfocus="this.style.borderColor='var(--border-hover)'" onblur="this.style.borderColor='var(--border)'">{% if submission %}{{ submission.catatan }}{% endif %}</textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
-                        {% if submission %}🔄 Perbarui Jawaban{% else %}📤 Kumpulkan Tugas{% endif %}
-                    </button>
-                </form>
-                {% elif tugas.is_expired and not submission %}
-                <div style="text-align:center;padding:16px 0;">
-                    <div style="font-size:32px;margin-bottom:8px;">⏰</div>
-                    <div style="font-size:13px;color:var(--text-secondary);">Deadline sudah lewat.<br>Kamu belum mengumpulkan tugas ini.</div>
-                </div>
-                {% endif %}
-
-                <!-- Hapus submission -->
-                {% if submission %}
-                <div class="divider" style="margin:16px 0;"></div>
-                <form method="post" action="{% url 'hapus_submission' submission.pk %}" onsubmit="return confirm('Tarik ulang submission? File jawabanmu akan dihapus.')">
-                    {% csrf_token %}
-                    <button type="submit" style="width:100%;padding:7px;border-radius:7px;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;font-size:12.5px;cursor:pointer;font-family:'Geist',sans-serif;">
-                        🗑️ Tarik Ulang Submission
-                    </button>
-                </form>
-                {% endif %}
-
-            </div>
-        </div>
-        {% endif %}
-
-    </div>
+  </div>
 </div>
-
-<style>
-.form-input {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    font-size: 13px;
-    font-family: 'Geist', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.1s;
-}
-.form-input:focus { border-color: var(--border-hover); }
-
-@media (max-width: 768px) {
-    #layout-grid { grid-template-columns: 1fr !important; }
-}
-</style>
-
-<script>
-function updateFileLabel(input) {
-    const label = document.getElementById('drop-label');
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const size = file.size < 1024*1024 ? (file.size/1024).toFixed(1)+' KB' : (file.size/1024/1024).toFixed(1)+' MB';
-        label.innerHTML = `<strong style="color:var(--text);">📄 ${file.name}</strong><br><span style="font-size:11px;">${size}</span>`;
-    }
-}
-
-// Drag & drop
-const dropZone = document.getElementById('drop-zone');
-if (dropZone) {
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.style.borderColor = 'var(--border-hover)';
-        dropZone.style.background = 'var(--bg-tertiary)';
-    });
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.style.borderColor = 'var(--border)';
-        dropZone.style.background = 'var(--bg-secondary)';
-    });
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const input = document.getElementById('id_file_jawaban');
-        if (e.dataTransfer.files.length) {
-            input.files = e.dataTransfer.files;
-            updateFileLabel(input);
-        }
-        dropZone.style.borderColor = 'var(--border)';
-        dropZone.style.background = 'var(--bg-secondary)';
-    });
-}
-</script>
 {% endblock %}

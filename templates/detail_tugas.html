@@ -137,9 +137,36 @@
                                 💬 {{ sub.catatan }}
                             </div>
                             {% endif %}
-                            <a href="{{ sub.file_jawaban.url }}" target="_blank" class="btn btn-secondary" style="font-size:11.5px;padding:4px 10px;">
-                                ⬇️ {{ sub.nama_file|default:"Download" }} <span style="color:var(--text-tertiary);">({{ sub.ukuran_display }})</span>
-                            </a>
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;">
+                                <a href="{{ sub.file_jawaban.url }}" target="_blank" class="btn btn-secondary" style="font-size:11.5px;padding:4px 10px;">
+                                    ⬇️ {{ sub.nama_file|default:"Download" }} <span style="color:var(--text-tertiary);">({{ sub.ukuran_display }})</span>
+                                </a>
+                                <a href="{% url 'beri_nilai' sub.pk %}" class="btn btn-primary" style="font-size:11.5px;padding:4px 10px;">
+                                    ✏️ Beri Nilai
+                                </a>
+                            </div>
+                            <!-- Tampilkan nilai jika sudah dinilai -->
+                            {% if sub.nilai is not None %}
+                            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-secondary);border-radius:7px;border:1px solid var(--border);">
+                                <span style="font-size:18px;font-weight:700;color:var(--text);">{{ sub.nilai }}</span>
+                                <span style="font-size:13px;font-weight:600;padding:2px 8px;border-radius:5px;
+                                    {% if sub.grade_label == 'A' %}background:#dcfce7;color:#166534;
+                                    {% elif sub.grade_label == 'B' %}background:#dbeafe;color:#1e40af;
+                                    {% elif sub.grade_label == 'C' %}background:#fef9c3;color:#854d0e;
+                                    {% elif sub.grade_label == 'D' %}background:#ffedd5;color:#9a3412;
+                                    {% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                                    {{ sub.grade_label }}
+                                </span>
+                                {% if sub.feedback %}
+                                <span style="font-size:12px;color:var(--text-secondary);flex:1;">💬 {{ sub.feedback }}</span>
+                                {% endif %}
+                                <span style="font-size:11px;color:var(--text-tertiary);">{{ sub.dinilai_pada|date:"d M Y" }}</span>
+                            </div>
+                            {% else %}
+                            <div style="margin-top:6px;">
+                                <span style="font-size:11.5px;color:var(--text-tertiary);font-style:italic;">Belum dinilai</span>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -172,6 +199,34 @@
                     <div style="margin-top:8px;"><span class="chip chip-green">Tepat Waktu</span></div>
                     {% endif %}
                 </div>
+
+                <!-- Nilai mahasiswa -->
+                {% if submission.nilai is not None %}
+                <div style="margin-bottom:16px;padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-secondary);text-align:center;">
+                    <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Nilai Kamu</div>
+                    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
+                        <span style="font-size:32px;font-weight:700;color:var(--text);">{{ submission.nilai }}</span>
+                        <span style="font-size:18px;font-weight:700;padding:4px 12px;border-radius:7px;
+                            {% if submission.grade_label == 'A' %}background:#dcfce7;color:#166534;
+                            {% elif submission.grade_label == 'B' %}background:#dbeafe;color:#1e40af;
+                            {% elif submission.grade_label == 'C' %}background:#fef9c3;color:#854d0e;
+                            {% elif submission.grade_label == 'D' %}background:#ffedd5;color:#9a3412;
+                            {% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                            {{ submission.grade_label }}
+                        </span>
+                    </div>
+                    {% if submission.feedback %}
+                    <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.5;padding:8px 10px;background:var(--bg);border-radius:7px;text-align:left;">
+                        💬 {{ submission.feedback }}
+                    </div>
+                    {% endif %}
+                    <div style="font-size:11px;color:var(--text-tertiary);margin-top:6px;">Dinilai {{ submission.dinilai_pada|date:"d M Y, H:i" }}</div>
+                </div>
+                {% else %}
+                <div style="margin-bottom:16px;padding:10px 12px;border-radius:8px;background:var(--bg-secondary);text-align:center;">
+                    <span style="font-size:12.5px;color:var(--text-tertiary);">⏳ Menunggu penilaian</span>
+                </div>
+                {% endif %}
                 <div class="divider" style="margin-bottom:16px;"></div>
                 <!-- File yang sudah dikumpulkan -->
                 <div style="margin-bottom:16px;">
