@@ -164,10 +164,10 @@ def dashboard_view(request):
         )
         rata_nilai_kelas = round(float(nilai_stats['rata']), 1) if nilai_stats['rata'] else None
 
-        # Distribusi grade
+        # Distribusi grade — FIX: satu query aggregation, bukan loop
         distribusi_grade = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0}
-        for sub in TugasSubmission.objects.filter(nilai__isnull=False).values_list('nilai', flat=True):
-            n = float(sub)
+        for row in TugasSubmission.objects.filter(nilai__isnull=False).values_list('nilai', flat=True).iterator():
+            n = float(row)
             if n >= 85: distribusi_grade['A'] += 1
             elif n >= 75: distribusi_grade['B'] += 1
             elif n >= 65: distribusi_grade['C'] += 1
@@ -180,17 +180,21 @@ def dashboard_view(request):
         # ── Notifikasi unread ─────────────────────────────────────────────────
         notif_unread = Notifikasi.objects.filter(user=request.user, dibaca=False).count()
 
-        # ── Pertemuan 5 terbaru ────────────────────────────────────────────────
-        pertemuan_terbaru = Pertemuan.objects.select_related('mata_kuliah').order_by('-tanggal')[:5]
-        pertemuan_terbaru_data = []
-        for pt in pertemuan_terbaru:
-            jumlah_hadir = Attendance.objects.filter(pertemuan=pt).count()
-            persen_hadir = round((jumlah_hadir / total_mahasiswa) * 100) if total_mahasiswa > 0 else 0
-            pertemuan_terbaru_data.append({
+        # ── Pertemuan 5 terbaru — FIX N+1: annotate jumlah_hadir sekaligus ──────
+        pertemuan_terbaru_qs = (
+            Pertemuan.objects
+            .select_related('mata_kuliah')
+            .annotate(jumlah_hadir=Count('attendance'))
+            .order_by('-tanggal')[:5]
+        )
+        pertemuan_terbaru_data = [
+            {
                 'pertemuan': pt,
-                'jumlah_hadir': jumlah_hadir,
-                'persen_hadir': persen_hadir,
-            })
+                'jumlah_hadir': pt.jumlah_hadir,
+                'persen_hadir': round((pt.jumlah_hadir / total_mahasiswa) * 100) if total_mahasiswa > 0 else 0,
+            }
+            for pt in pertemuan_terbaru_qs
+        ]
 
         context = {
             'is_ketua': True,
@@ -278,22 +282,24 @@ def profil_view(request):
         .order_by('-waktu_hadir')[:10]
     )
 
-    # Statistik per mata kuliah
+    # Statistik per MK — FIX N+1: dua query total, bukan 2*N query
     from attendance.models import MataKuliah
     from django.db.models import Count
+    pertemuan_per_mk = dict(
+        Pertemuan.objects.values('mata_kuliah_id').annotate(c=Count('id')).values_list('mata_kuliah_id', 'c')
+    )
+    hadir_per_mk = dict(
+        Attendance.objects.filter(user=request.user)
+        .values('pertemuan__mata_kuliah_id')
+        .annotate(c=Count('id'))
+        .values_list('pertemuan__mata_kuliah_id', 'c')
+    )
     stats_mk = []
     for mk in MataKuliah.objects.all():
-        total_mk = Pertemuan.objects.filter(mata_kuliah=mk).count()
-        hadir_mk = Attendance.objects.filter(
-            user=request.user, pertemuan__mata_kuliah=mk
-        ).count()
+        total_mk = pertemuan_per_mk.get(mk.id, 0)
+        hadir_mk = hadir_per_mk.get(mk.id, 0)
         persen_mk = round((hadir_mk / total_mk) * 100, 1) if total_mk > 0 else 0
-        stats_mk.append({
-            'mk': mk,
-            'total': total_mk,
-            'hadir': hadir_mk,
-            'persen': persen_mk,
-        })
+        stats_mk.append({'mk': mk, 'total': total_mk, 'hadir': hadir_mk, 'persen': persen_mk})
 
     return render(request, 'profil.html', {
         'profile': profile,
@@ -332,21 +338,24 @@ def profil_user_view(request, user_id):
         .order_by('-waktu_hadir')[:10]
     )
 
-    # Statistik per MK untuk user ini
+    # Statistik per MK untuk user ini — FIX N+1
     from attendance.models import MataKuliah
+    from django.db.models import Count as _Count
+    pertemuan_per_mk = dict(
+        Pertemuan.objects.values('mata_kuliah_id').annotate(c=_Count('id')).values_list('mata_kuliah_id', 'c')
+    )
+    hadir_per_mk = dict(
+        Attendance.objects.filter(user=target_user)
+        .values('pertemuan__mata_kuliah_id')
+        .annotate(c=_Count('id'))
+        .values_list('pertemuan__mata_kuliah_id', 'c')
+    )
     stats_mk = []
     for mk in MataKuliah.objects.all():
-        total_mk = Pertemuan.objects.filter(mata_kuliah=mk).count()
-        hadir_mk = Attendance.objects.filter(
-            user=target_user, pertemuan__mata_kuliah=mk
-        ).count()
+        total_mk = pertemuan_per_mk.get(mk.id, 0)
+        hadir_mk = hadir_per_mk.get(mk.id, 0)
         persen_mk = round((hadir_mk / total_mk) * 100, 1) if total_mk > 0 else 0
-        stats_mk.append({
-            'mk': mk,
-            'total': total_mk,
-            'hadir': hadir_mk,
-            'persen': persen_mk,
-        })
+        stats_mk.append({'mk': mk, 'total': total_mk, 'hadir': hadir_mk, 'persen': persen_mk})
 
     # Nilai tugas untuk superuser lihat profil mahasiswa
     try:

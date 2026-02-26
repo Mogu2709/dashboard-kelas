@@ -331,8 +331,7 @@ def buat_pengumuman(request):
             msg.error(request, '⚠️ Judul dan isi pengumuman tidak boleh kosong.')
             return render(request, 'buat_pengumuman.html')
 
-        if judul and isi:
-            p = Pengumuman.objects.create(
+        p = Pengumuman.objects.create(
                 judul=judul, isi=isi, prioritas=prioritas,
                 pinned=pinned, embed_url=embed_url,
                 dibuat_oleh=request.user,

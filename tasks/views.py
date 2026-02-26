@@ -48,6 +48,10 @@ def _kirim_notif_semua(tipe, judul, pesan, url, exclude_user=None):
 
 @login_required
 def notif_list_api(request):
+    # FIX: Auto-cleanup notif lama (sudah dibaca & lebih dari 30 hari)
+    cutoff = timezone.now() - timezone.timedelta(days=30)
+    Notifikasi.objects.filter(user=request.user, dibaca=True, dibuat_pada__lt=cutoff).delete()
+
     notifs = Notifikasi.objects.filter(user=request.user).order_by('-dibuat_pada')[:20]
     unread_count = Notifikasi.objects.filter(user=request.user, dibaca=False).count()
     data = [
