@@ -166,14 +166,14 @@
         .dropdown-divider { height: 1px; background: var(--border); margin: 4px 6px; }
 
         /* Sidebar overlay */
-        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 150; backdrop-filter: blur(2px); }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 270; backdrop-filter: blur(1px); -webkit-backdrop-filter: blur(1px); }
         .sidebar-overlay.active { display: block; }
 
         /* ── SIDEBAR ── */
         .sidebar {
             width: var(--sidebar-w); height: 100vh; position: fixed; top: 0; left: 0;
             background: var(--bg-secondary); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; z-index: 180;
+            display: flex; flex-direction: column; z-index: 280;
             transition: transform 0.25s cubic-bezier(0.16,1,0.3,1);
             padding-top: var(--topbar-h);
         }
@@ -256,7 +256,8 @@
                 box-shadow: 4px 0 24px rgba(0,0,0,0.12);
             }
             .sidebar.open { transform: translateX(0); }
-            .sidebar-overlay { z-index: 290; }
+            .sidebar-close { display: flex !important; }
+            .sidebar-overlay { z-index: 270; }
             .main { margin-left: 0; }
             .page-header { padding: 24px 20px 18px; }
             .page-emoji { font-size: 26px; }
@@ -388,11 +389,14 @@
 
 <!-- ── SIDEBAR ── -->
 <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
+    <div class="sidebar-header" style="display:flex;align-items:center;justify-content:space-between;">
         <div class="workspace-row">
             <div class="workspace-icon">K</div>
             <span class="workspace-name">KelasKu</span>
         </div>
+        <button onclick="closeSidebar()" class="sidebar-close" aria-label="Tutup menu"
+            style="display:none;width:30px;height:30px;border:none;background:transparent;cursor:pointer;border-radius:6px;font-size:16px;color:var(--text-secondary);align-items:center;justify-content:center;transition:background 0.1s;"
+            onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">✕</button>
     </div>
 
     <div style="overflow-y:auto;flex:1;padding-bottom:16px;">
