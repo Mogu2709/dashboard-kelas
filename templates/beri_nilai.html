@@ -1,138 +1,141 @@
 {% extends 'base.html' %}
-
-{% block title %}Beri Nilai – {{ submission.tugas.judul }}{% endblock %}
+{% block nav_tugas %}active{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4 py-8">
+<div class="page-header fade">
+    <div style="margin-bottom:10px;">
+        <a href="{% url 'detail_tugas' submission.tugas.pk %}" style="font-size:13px;color:var(--text-secondary);text-decoration:none;">← Kembali ke Tugas</a>
+    </div>
+    <h1 class="page-title" style="font-size:22px;">✏️ Beri Nilai</h1>
+    <p class="page-subtitle">{{ submission.tugas.judul }} · {{ submission.tugas.mata_kuliah.nama }}</p>
+</div>
 
-  <!-- Breadcrumb -->
-  <div class="text-sm text-gray-500 mb-6">
-    <a href="{% url 'tugas_list' %}" class="hover:text-blue-600">Tugas</a>
-    <span class="mx-2">/</span>
-    <a href="{% url 'detail_tugas' submission.tugas.pk %}" class="hover:text-blue-600">{{ submission.tugas.judul }}</a>
-    <span class="mx-2">/</span>
-    <span>Beri Nilai</span>
-  </div>
+<div class="page-content">
+<div style="max-width:560px;">
 
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5">
-      <h1 class="text-xl font-bold text-white">📝 Beri Nilai</h1>
-      <p class="text-blue-100 text-sm mt-1">{{ submission.tugas.judul }}</p>
+    <!-- Info mahasiswa -->
+    <div class="notion-card fade fade-1" style="padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0;">
+            {{ submission.user.profile.inisial }}
+        </div>
+        <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:600;color:var(--text);">{{ submission.user.profile.display_name }}</div>
+            <div style="font-size:12px;color:var(--text-tertiary);">
+                {{ submission.user.profile.nim }} · Dikumpulkan {{ submission.dikumpulkan_pada|date:"d M Y, H:i" }}
+                {% if submission.terlambat %}<span style="color:#d97706;font-weight:500;"> · Terlambat</span>{% endif %}
+            </div>
+        </div>
+        {% if submission.file_jawaban %}
+        <a href="{{ submission.file_jawaban.url }}" target="_blank" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;flex-shrink:0;">
+            📎 {{ submission.nama_file|default:"Lihat File" }}
+        </a>
+        {% endif %}
     </div>
 
-    <!-- Info Mahasiswa -->
-    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-4">
-      <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">
-        {{ submission.user.username|first|upper }}
-      </div>
-      <div>
-        <p class="font-semibold text-gray-800">{{ submission.user.get_full_name|default:submission.user.username }}</p>
-        <p class="text-xs text-gray-500">
-          Dikumpulkan {{ submission.dikumpulkan_pada|date:"d M Y, H:i" }}
-          {% if submission.terlambat %}
-            <span class="ml-1 text-red-500 font-medium">· Terlambat</span>
-          {% endif %}
-        </p>
-      </div>
-      <!-- File jawaban -->
-      {% if submission.file_jawaban %}
-      <a href="{{ submission.file_jawaban.url }}"
-         target="_blank"
-         class="ml-auto flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
-        📎 {{ submission.nama_file|default:"Lihat File" }}
-      </a>
-      {% endif %}
-    </div>
-
-    <!-- Catatan mahasiswa -->
     {% if submission.catatan %}
-    <div class="px-6 py-3 bg-yellow-50 border-b border-yellow-100">
-      <p class="text-xs text-yellow-700 font-medium mb-1">Catatan dari mahasiswa:</p>
-      <p class="text-sm text-gray-700">{{ submission.catatan }}</p>
+    <div class="fade fade-1" style="padding:12px 16px;background:#fefce8;border:1px solid #fde68a;border-radius:9px;margin-bottom:16px;font-size:13px;color:#854d0e;">
+        💬 <strong>Catatan mahasiswa:</strong> {{ submission.catatan }}
     </div>
     {% endif %}
 
-    <!-- Form Nilai -->
-    <form method="post" class="px-6 py-6 space-y-5">
-      {% csrf_token %}
+    <!-- Form nilai -->
+    <div class="notion-card fade fade-2" style="padding:24px;">
 
-      <!-- Nilai -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-          Nilai <span class="text-red-500">*</span>
-          <span class="text-gray-400 font-normal">(0–100)</span>
-        </label>
-        <input
-          type="number"
-          name="nilai"
-          min="0" max="100" step="0.01"
-          value="{{ submission.nilai|default:'' }}"
-          required
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg font-bold"
-          placeholder="Contoh: 85"
-        >
-        <!-- Preview grade -->
-        <p class="text-xs text-gray-500 mt-1">
-          Grade saat ini:
-          <span class="font-semibold text-gray-700">
-            {% if submission.nilai is not None %}
-              {{ submission.nilai }} → {{ submission.grade_label }}
-            {% else %}
-              Belum dinilai
-            {% endif %}
-          </span>
-        </p>
-      </div>
+        <form method="post">
+            {% csrf_token %}
 
-      <!-- Feedback -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-          Feedback <span class="text-gray-400 font-normal">(opsional)</span>
-        </label>
-        <textarea
-          name="feedback"
-          rows="4"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-          placeholder="Tulis feedback untuk mahasiswa..."
-        >{{ submission.feedback }}</textarea>
-      </div>
+            <!-- Input nilai -->
+            <div style="margin-bottom:20px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Nilai (0–100)</label>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <input type="number" name="nilai" id="nilai-input"
+                        min="0" max="100" step="0.01"
+                        value="{{ submission.nilai|default:'' }}"
+                        required
+                        placeholder="85"
+                        style="width:120px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text);background:white;outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
+                        onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
+                        onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
+                        oninput="updateGradePreview(this.value)">
+                    <!-- Grade preview -->
+                    <div id="grade-preview" style="display:flex;align-items:center;gap:8px;">
+                        <span id="grade-badge" style="font-size:20px;font-weight:700;padding:6px 14px;border-radius:8px;font-family:'IBM Plex Mono',monospace;transition:all 0.2s;
+                            {% if submission.grade_label == 'A' %}background:#dcfce7;color:#166534;
+                            {% elif submission.grade_label == 'B' %}background:#dbeafe;color:#1e40af;
+                            {% elif submission.grade_label == 'C' %}background:#fef9c3;color:#854d0e;
+                            {% elif submission.grade_label == 'D' %}background:#ffedd5;color:#9a3412;
+                            {% elif submission.grade_label %}background:#fee2e2;color:#991b1b;
+                            {% else %}background:var(--bg-secondary);color:var(--text-tertiary);{% endif %}">
+                            {{ submission.grade_label|default:"–" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
 
-      <!-- Tabel Grade Referensi -->
-      <div class="bg-gray-50 rounded-lg p-3">
-        <p class="text-xs font-medium text-gray-600 mb-2">Konversi Grade:</p>
-        <div class="grid grid-cols-5 gap-1 text-center text-xs">
-          {% for range, grade, color in grade_table %}
-          <div class="rounded px-2 py-1 {{ color }}">
-            <div class="font-bold">{{ grade }}</div>
-            <div class="text-gray-500">{{ range }}</div>
-          </div>
-          {% empty %}
-          <div class="col-span-5 flex gap-2">
-            <span class="flex-1 bg-green-100 text-green-800 rounded px-2 py-1 font-semibold">A ≥ 85</span>
-            <span class="flex-1 bg-blue-100 text-blue-800 rounded px-2 py-1 font-semibold">B ≥ 75</span>
-            <span class="flex-1 bg-yellow-100 text-yellow-800 rounded px-2 py-1 font-semibold">C ≥ 65</span>
-            <span class="flex-1 bg-orange-100 text-orange-800 rounded px-2 py-1 font-semibold">D ≥ 55</span>
-            <span class="flex-1 bg-red-100 text-red-800 rounded px-2 py-1 font-semibold">E &lt; 55</span>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
+            <!-- Tabel grade referensi -->
+            <div style="margin-bottom:20px;padding:12px;background:var(--bg-secondary);border-radius:8px;">
+                <div style="font-size:10.5px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Konversi Grade</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    {% for range, grade, color in grade_table %}
+                    <div style="flex:1;min-width:44px;text-align:center;padding:6px 8px;border-radius:6px;
+                        {% if grade == 'A' %}background:#dcfce7;color:#166534;
+                        {% elif grade == 'B' %}background:#dbeafe;color:#1e40af;
+                        {% elif grade == 'C' %}background:#fef9c3;color:#854d0e;
+                        {% elif grade == 'D' %}background:#ffedd5;color:#9a3412;
+                        {% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                        <div style="font-size:13px;font-weight:700;">{{ grade }}</div>
+                        <div style="font-size:10px;opacity:0.8;">{{ range }}</div>
+                    </div>
+                    {% empty %}
+                    <div style="flex:1;text-align:center;padding:6px;border-radius:6px;background:#dcfce7;color:#166534;"><div style="font-size:13px;font-weight:700;">A</div><div style="font-size:10px;">≥ 85</div></div>
+                    <div style="flex:1;text-align:center;padding:6px;border-radius:6px;background:#dbeafe;color:#1e40af;"><div style="font-size:13px;font-weight:700;">B</div><div style="font-size:10px;">≥ 75</div></div>
+                    <div style="flex:1;text-align:center;padding:6px;border-radius:6px;background:#fef9c3;color:#854d0e;"><div style="font-size:13px;font-weight:700;">C</div><div style="font-size:10px;">≥ 65</div></div>
+                    <div style="flex:1;text-align:center;padding:6px;border-radius:6px;background:#ffedd5;color:#9a3412;"><div style="font-size:13px;font-weight:700;">D</div><div style="font-size:10px;">≥ 55</div></div>
+                    <div style="flex:1;text-align:center;padding:6px;border-radius:6px;background:#fee2e2;color:#991b1b;"><div style="font-size:13px;font-weight:700;">E</div><div style="font-size:10px;">< 55</div></div>
+                    {% endfor %}
+                </div>
+            </div>
 
-      <!-- Tombol -->
-      <div class="flex gap-3 pt-2">
-        <button type="submit"
-          class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition">
-          💾 Simpan Nilai
-        </button>
-        <a href="{% url 'detail_tugas' submission.tugas.pk %}"
-           class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-4 rounded-lg transition">
-          Batal
-        </a>
-      </div>
-    </form>
+            <!-- Feedback -->
+            <div style="margin-bottom:24px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Feedback <span style="font-weight:400;text-transform:none;letter-spacing:0;">(opsional)</span></label>
+                <textarea name="feedback" rows="3" placeholder="Tulis feedback untuk mahasiswa..."
+                    style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;font-family:'Geist',sans-serif;resize:vertical;background:white;color:var(--text);outline:none;transition:border-color 0.15s;box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='var(--border)'">{{ submission.feedback }}</textarea>
+            </div>
 
-  </div>
+            <div style="display:flex;gap:10px;">
+                <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;">💾 Simpan Nilai</button>
+                <a href="{% url 'detail_tugas' submission.tugas.pk %}" class="btn btn-secondary" style="flex:1;justify-content:center;">Batal</a>
+            </div>
+        </form>
+    </div>
 </div>
+</div>
+
+<script>
+const gradeThresholds = [
+    { min: 85, grade: 'A', bg: '#dcfce7', color: '#166534' },
+    { min: 75, grade: 'B', bg: '#dbeafe', color: '#1e40af' },
+    { min: 65, grade: 'C', bg: '#fef9c3', color: '#854d0e' },
+    { min: 55, grade: 'D', bg: '#ffedd5', color: '#9a3412' },
+    { min: 0,  grade: 'E', bg: '#fee2e2', color: '#991b1b' },
+];
+function updateGradePreview(val) {
+    const badge = document.getElementById('grade-badge');
+    const n = parseFloat(val);
+    if (isNaN(n) || val === '') {
+        badge.textContent = '–';
+        badge.style.background = 'var(--bg-secondary)';
+        badge.style.color = 'var(--text-tertiary)';
+        return;
+    }
+    const g = gradeThresholds.find(t => n >= t.min) || gradeThresholds[gradeThresholds.length - 1];
+    badge.textContent = g.grade;
+    badge.style.background = g.bg;
+    badge.style.color = g.color;
+}
+// Init on load
+updateGradePreview(document.getElementById('nilai-input').value);
+</script>
 {% endblock %}

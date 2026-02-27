@@ -1,5 +1,10 @@
 {% extends "base.html" %}
-{% block nav_tugas %}active{% endblock %}
+{% block nav_tugas %}active<style>
+@media (max-width: 600px) {
+    .notion-card { padding: 20px 16px !important; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="page-header">

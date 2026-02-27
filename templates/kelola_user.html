@@ -1,5 +1,13 @@
 {% extends 'base.html' %}
-{% block nav_kelola_user %}active{% endblock %}
+{% block nav_kelola_user %}active<style>
+@media (max-width: 600px) {
+    .user-row { flex-wrap: wrap !important; }
+    .user-actions { flex-wrap: wrap; width: 100%; margin-top: 6px; }
+    .user-actions form, .user-actions a { flex: 1; }
+    .user-actions button, .user-actions a.btn { width: 100%; text-align: center; justify-content: center; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="page-header fade">
@@ -25,7 +33,7 @@
         {% if pending %}
         <div style="padding:6px;">
             {% for profile in pending %}
-            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:7px;transition:background 0.1s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+            <div class="user-row" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:7px;transition:background 0.1s;flex-wrap:wrap;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
                 <div style="width:34px;height:34px;border-radius:8px;background:#d97706;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">
                     {{ profile.user.username|slice:":1"|upper }}
                 </div>
@@ -33,7 +41,7 @@
                     <div style="font-size:13px;font-weight:500;color:var(--text);">{{ profile.user.username }}</div>
                     <div style="font-size:11px;color:var(--text-tertiary);">Daftar {{ profile.dibuat_pada|date:"d M Y, H:i" }}</div>
                 </div>
-                <div style="display:flex;gap:6px;flex-shrink:0;">
+                <div class="user-actions" style="display:flex;gap:6px;flex-shrink:0;">
                     <form method="post" action="{% url 'approve_user' profile.user.id %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-primary" style="padding:5px 13px;font-size:12px;background:#1a7f4b;">✓ Setujui</button>
@@ -62,7 +70,7 @@
         {% if approved %}
         <div style="padding:6px;">
             {% for profile in approved %}
-            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:7px;transition:background 0.1s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+            <div class="user-row" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:7px;transition:background 0.1s;flex-wrap:wrap;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
                 <div style="width:34px;height:34px;border-radius:8px;background:#1a7f4b;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">
                     {{ profile.user.username|slice:":1"|upper }}
                 </div>
@@ -74,7 +82,7 @@
                         {% if profile.nama_lengkap %}@{{ profile.user.username }} · {% endif %}Disetujui {{ profile.diproses_pada|date:"d M Y" }}
                     </div>
                 </div>
-                <div style="display:flex;gap:6px;flex-shrink:0;">
+                <div class="user-actions" style="display:flex;gap:6px;flex-shrink:0;">
                     <a href="{% url 'profil_user' profile.user.id %}" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;">Edit</a>
                     <form method="post" action="{% url 'reject_user' profile.user.id %}" style="display:inline;">
                         {% csrf_token %}
@@ -102,7 +110,7 @@
         </div>
         <div style="padding:6px;">
             {% for profile in rejected %}
-            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:7px;transition:background 0.1s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+            <div class="user-row" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:7px;transition:background 0.1s;flex-wrap:wrap;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
                 <div style="width:34px;height:34px;border-radius:8px;background:var(--bg-tertiary);color:var(--text-tertiary);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">
                     {{ profile.user.username|slice:":1"|upper }}
                 </div>
@@ -110,7 +118,7 @@
                     <div style="font-size:13px;font-weight:500;color:var(--text-secondary);">{{ profile.user.username }}</div>
                     <div style="font-size:11px;color:var(--text-tertiary);">Ditolak {{ profile.diproses_pada|date:"d M Y" }}</div>
                 </div>
-                <div style="display:flex;gap:6px;flex-shrink:0;">
+                <div class="user-actions" style="display:flex;gap:6px;flex-shrink:0;">
                     <form method="post" action="{% url 'approve_user' profile.user.id %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;color:#1a7f4b;border-color:#c3e9d2;">Setujui</button>

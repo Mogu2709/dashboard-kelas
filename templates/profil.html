@@ -23,8 +23,8 @@
     <div style="display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;" class="profil-grid">
 
         <!-- Kartu Identitas -->
-        <div class="notion-card fade fade-1" style="padding:24px 20px;text-align:center;">
-            <div style="width:64px;height:64px;border-radius:14px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-family:'Lora',serif;font-size:24px;font-weight:600;margin:0 auto 14px;">
+        <div class="notion-card fade fade-1 profil-avatar-card" style="padding:24px 20px;text-align:center;">
+            <div class="avatar-img" style="width:64px;height:64px;border-radius:14px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-family:'Lora',serif;font-size:24px;font-weight:600;margin:0 auto 14px;">
                 {{ profile.inisial }}
             </div>
             <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;">{{ profile.display_name }}</div>
@@ -70,7 +70,7 @@
                         <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Nama Lengkap</label>
                         <input type="text" name="nama_lengkap" value="{{ profile.nama_lengkap }}" placeholder="Nama sesuai KTP"
                             {% if not can_edit %}disabled{% endif %}
-                            style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'Geist',sans-serif;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'Geist',sans-serif;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
                             onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
                     </div>
 
@@ -78,7 +78,7 @@
                         <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">NIM</label>
                         <input type="text" name="nim" value="{{ profile.nim }}" placeholder="Nomor Induk Mahasiswa"
                             {% if not can_edit %}disabled{% endif %}
-                            style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
                             onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
                     </div>
 
@@ -86,7 +86,7 @@
                         <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Angkatan</label>
                         <input type="number" name="angkatan" value="{{ profile.angkatan|default:'' }}" placeholder="2023" min="2000" max="2099"
                             {% if not can_edit %}disabled{% endif %}
-                            style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
                             onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
                     </div>
 
@@ -94,14 +94,14 @@
                         <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Jurusan / Program Studi</label>
                         <input type="text" name="jurusan" value="{{ profile.jurusan }}" placeholder="Contoh: Teknik Informatika"
                             {% if not can_edit %}disabled{% endif %}
-                            style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'Geist',sans-serif;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'Geist',sans-serif;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
                             onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
                     </div>
 
                     <div>
                         <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Jenis Kelamin</label>
                         <select name="jenis_kelamin" {% if not can_edit %}disabled{% endif %}
-                            style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'Geist',sans-serif;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;cursor:{% if can_edit %}pointer{% else %}default{% endif %};"
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'Geist',sans-serif;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;cursor:{% if can_edit %}pointer{% else %}default{% endif %};"
                             onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='var(--border)'">
                             <option value="">-- Pilih --</option>
                             <option value="L" {% if profile.jenis_kelamin == 'L' %}selected{% endif %}>Laki-laki</option>
@@ -128,6 +128,10 @@
     .profil-grid { grid-template-columns: 1fr !important; }
     .form-grid { grid-template-columns: 1fr !important; }
     .form-grid > [style*="grid-column"] { grid-column: 1 !important; }
+    /* Avatar card jadi horizontal di mobile */
+    .profil-avatar-card { display: flex !important; align-items: center !important; gap: 16px !important; text-align: left !important; }
+    .profil-avatar-card .avatar-img { margin: 0 !important; }
+    .profil-stat-grid { grid-template-columns: 1fr 1fr !important; }
 }
 </style>
 {% endblock %}

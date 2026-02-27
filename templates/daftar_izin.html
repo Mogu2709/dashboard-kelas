@@ -18,17 +18,14 @@
 
 <div class="page-content">
 
-    <!-- Filter tabs -->
-    <div style="display:flex;gap:4px;margin-bottom:20px;" class="fade fade-1">
-        {% for val, label, count in filter_tabs %}
-        <a href="?status={{ val }}" class="btn {% if status_filter == val %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">
-            {{ label }}
-        </a>
-        {% endfor %}
-        <a href="?status=pending" class="btn {% if status_filter == 'pending' or not status_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">⏳ Pending{% if pending_count %} ({{ pending_count }}){% endif %}</a>
-        <a href="?status=approved" class="btn {% if status_filter == 'approved' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">✅ Disetujui</a>
-        <a href="?status=rejected" class="btn {% if status_filter == 'rejected' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">❌ Ditolak</a>
-        <a href="?status=semua" class="btn {% if status_filter == 'semua' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">Semua</a>
+    <!-- Filter tabs — scrollable horizontal di mobile -->
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:20px;padding-bottom:4px;" class="fade fade-1">
+        <div style="display:flex;gap:6px;min-width:max-content;">
+            <a href="?status=pending" class="btn {% if status_filter == 'pending' or not status_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 14px;white-space:nowrap;">⏳ Pending{% if pending_count %} ({{ pending_count }}){% endif %}</a>
+            <a href="?status=approved" class="btn {% if status_filter == 'approved' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 14px;white-space:nowrap;">✅ Disetujui</a>
+            <a href="?status=rejected" class="btn {% if status_filter == 'rejected' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 14px;white-space:nowrap;">❌ Ditolak</a>
+            <a href="?status=semua" class="btn {% if status_filter == 'semua' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 14px;white-space:nowrap;">Semua</a>
+        </div>
     </div>
 
     {% if page_obj %}
@@ -44,7 +41,7 @@
                 </div>
 
                 <!-- Info -->
-                <div style="flex:1;min-width:200px;">
+                <div style="flex:1;min-width:0;">
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
                         <span style="font-size:13.5px;font-weight:500;color:var(--text);">{{ izin.user.profile.display_name }}</span>
                         <span style="font-size:11.5px;color:var(--text-tertiary);">{{ izin.user.profile.nim }}</span>
@@ -78,7 +75,7 @@
 
                 <!-- Action (hanya kalau pending) -->
                 {% if izin.status == 'pending' %}
-                <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;min-width:100px;">
                     <form method="post" action="{% url 'proses_izin' izin.id %}">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="approve">
@@ -136,4 +133,12 @@ function showRejectForm(id) {
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 </script>
+<style>
+@media (max-width: 600px) {
+    /* Stack avatar + info + action vertically */
+    .izin-row { flex-direction: column !important; }
+    .izin-actions { flex-direction: row !important; width: 100%; }
+    .izin-actions .btn { flex: 1; text-align: center; }
+}
+</style>
 {% endblock %}

@@ -1,5 +1,10 @@
 {% extends 'base.html' %}
-{% block nav_buat %}active{% endblock %}
+{% block nav_buat %}active<style>
+@media (max-width: 600px) {
+    .notion-card { padding: 20px 16px !important; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="page-header fade">
@@ -18,7 +23,7 @@
             <div style="margin-bottom:20px;">
                 <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Mata Kuliah</label>
                 <select name="mata_kuliah" id="id_mata_kuliah"
-                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;cursor:pointer;transition:border-color 0.15s;"
+                    style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;cursor:pointer;transition:border-color 0.15s;"
                     onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='var(--border)'">
                     {% for val, label in form.mata_kuliah.field.choices %}
                     <option value="{{ val }}" {% if form.mata_kuliah.value == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
@@ -43,7 +48,7 @@
                 <input type="text" name="judul"
                     value="{{ form.judul.value|default:'' }}"
                     placeholder="Misal: Pertemuan 1 — Pengantar"
-                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
+                    style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
                     onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
                     onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
                 {% if form.judul.errors %}
@@ -56,7 +61,7 @@
                 <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Tanggal</label>
                 <input type="date" name="tanggal"
                     value="{{ form.tanggal.value|default:'' }}"
-                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
+                    style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
                     onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
                     onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
                 {% if form.tanggal.errors %}
@@ -69,7 +74,7 @@
                 <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Waktu Mulai</label>
                 <input type="datetime-local" name="waktu_mulai"
                     value="{{ form.waktu_mulai.value|default:'' }}"
-                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
+                    style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
                     onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
                     onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
                     id="id_waktu_mulai">
@@ -86,7 +91,7 @@
                 </label>
                 <input type="datetime-local" name="batas_absen"
                     value="{{ form.batas_absen.value|default:'' }}"
-                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
+                    style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
                     onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
                     onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
                     id="id_batas_absen">

@@ -29,14 +29,14 @@
     {% endfor %}
     {% endif %}
 
-    <!-- Filter -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:20px;" class="fade fade-1">
-        <form method="get" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <a href="{% url 'materi_list' %}" class="btn {% if not mk_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">Semua</a>
+    <!-- Filter scrollable -->
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:20px;padding-bottom:2px;" class="fade fade-1">
+        <div style="display:flex;gap:6px;min-width:max-content;">
+            <a href="{% url 'materi_list' %}" class="btn {% if not mk_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 14px;white-space:nowrap;">Semua</a>
             {% for mk in mata_kuliah_list %}
-            <a href="?mk={{ mk.id }}" class="btn {% if mk_filter == mk.id|stringformat:'s' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">{{ mk.nama }}</a>
+            <a href="?mk={{ mk.id }}" class="btn {% if mk_filter == mk.id|stringformat:'s' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 14px;white-space:nowrap;">{{ mk.nama }}</a>
             {% endfor %}
-        </form>
+        </div>
     </div>
 
     <!-- Materi list as table-style rows -->

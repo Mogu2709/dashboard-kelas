@@ -1,5 +1,16 @@
 {% extends "base.html" %}
-{% block nav_grafik %}active{% endblock %}
+{% block nav_grafik %}active<style>
+@media (max-width: 640px) {
+    .kal-day { font-size: 10px !important; padding: 3px 1px !important; min-height: 32px !important; }
+    .kal-header-day { font-size: 9px !important; }
+    .grafik-stat-grid { grid-template-columns: 1fr 1fr !important; }
+    .grafik-chart-wrap { overflow-x: auto; }
+}
+@media (max-width: 380px) {
+    .grafik-stat-grid { grid-template-columns: 1fr !important; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="page-header fade">
