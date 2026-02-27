@@ -9,61 +9,101 @@
 </div>
 
 <div class="page-content">
-<div style="max-width:480px;" class="fade fade-1">
+<div style="max-width:520px;" class="fade fade-1">
     <div class="notion-card" style="padding:28px;">
         <form method="post">
             {% csrf_token %}
 
-            {% for field in form %}
+            {# ── Mata Kuliah ── #}
             <div style="margin-bottom:20px;">
-                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">{{ field.label }}</label>
-
-                {% if field.html_name == 'mata_kuliah' %}
-                {# Select matkul — pakai id khusus untuk JS #}
-                <select name="{{ field.html_name }}" id="id_mata_kuliah"
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Mata Kuliah</label>
+                <select name="mata_kuliah" id="id_mata_kuliah"
                     style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;cursor:pointer;transition:border-color 0.15s;"
                     onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='var(--border)'">
-                    {% for val, label in field.field.choices %}
-                    <option value="{{ val }}" {% if field.value == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% for val, label in form.mata_kuliah.field.choices %}
+                    <option value="{{ val }}" {% if form.mata_kuliah.value == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-
-                {% elif field.field.widget.input_type == 'select' %}
-                <select name="{{ field.html_name }}"
-                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;cursor:pointer;transition:border-color 0.15s;"
-                    onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='var(--border)'">
-                    {% for val, label in field.field.choices %}
-                    <option value="{{ val }}" {% if field.value == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-
-                {% else %}
-                <input
-                    type="{{ field.field.widget.input_type }}"
-                    name="{{ field.html_name }}"
-                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
-                    {% if field.value %}value="{{ field.value }}"{% endif %}
-                    onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
-                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
-                >
-                {% endif %}
-
-                {% if field.errors %}
-                <div style="font-size:12px;color:#e03e3e;margin-top:4px;">{{ field.errors|join:", " }}</div>
+                {% if form.mata_kuliah.errors %}
+                <div style="font-size:12px;color:#e03e3e;margin-top:4px;">{{ form.mata_kuliah.errors|join:", " }}</div>
                 {% endif %}
             </div>
 
-            {# Setelah field mata_kuliah, tampilkan semester otomatis #}
-            {% if field.html_name == 'mata_kuliah' %}
+            {# ── Auto Semester ── #}
             <div style="margin-bottom:20px;">
                 <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Semester</label>
                 <div id="semester-display" style="padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:var(--bg-secondary);color:var(--text-secondary);min-height:38px;">
                     — pilih mata kuliah dulu
                 </div>
             </div>
-            {% endif %}
 
-            {% endfor %}
+            {# ── Judul ── #}
+            <div style="margin-bottom:20px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Judul Pertemuan</label>
+                <input type="text" name="judul"
+                    value="{{ form.judul.value|default:'' }}"
+                    placeholder="Misal: Pertemuan 1 — Pengantar"
+                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
+                    onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
+                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+                {% if form.judul.errors %}
+                <div style="font-size:12px;color:#e03e3e;margin-top:4px;">{{ form.judul.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            {# ── Tanggal ── #}
+            <div style="margin-bottom:20px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Tanggal</label>
+                <input type="date" name="tanggal"
+                    value="{{ form.tanggal.value|default:'' }}"
+                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
+                    onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
+                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+                {% if form.tanggal.errors %}
+                <div style="font-size:12px;color:#e03e3e;margin-top:4px;">{{ form.tanggal.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            {# ── FIX BUG 3: Waktu Mulai ── #}
+            <div style="margin-bottom:20px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Waktu Mulai</label>
+                <input type="datetime-local" name="waktu_mulai"
+                    value="{{ form.waktu_mulai.value|default:'' }}"
+                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
+                    onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
+                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
+                    id="id_waktu_mulai">
+                {% if form.waktu_mulai.errors %}
+                <div style="font-size:12px;color:#e03e3e;margin-top:4px;">{{ form.waktu_mulai.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            {# ── FIX BUG 3: Batas Absen ── #}
+            <div style="margin-bottom:20px;">
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">
+                    Batas Absen
+                    <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-tertiary);"> — opsional, default +2 jam</span>
+                </label>
+                <input type="datetime-local" name="batas_absen"
+                    value="{{ form.batas_absen.value|default:'' }}"
+                    style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:'Geist',sans-serif;transition:border-color 0.15s,box-shadow 0.15s;"
+                    onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'"
+                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
+                    id="id_batas_absen">
+                <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:5px;">
+                    💡 Kosongkan untuk otomatis 2 jam setelah waktu mulai.
+                </div>
+                {% if form.batas_absen.errors %}
+                <div style="font-size:12px;color:#e03e3e;margin-top:4px;">{{ form.batas_absen.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            {# ── Errors global ── #}
+            {% if form.non_field_errors %}
+            <div style="font-size:13px;color:#e03e3e;margin-bottom:16px;padding:10px 14px;background:#fef2f2;border-radius:7px;border:1px solid #fecaca;">
+                {{ form.non_field_errors|join:", " }}
+            </div>
+            {% endif %}
 
             <div style="display:flex;gap:10px;align-items:center;margin-top:8px;padding-top:20px;border-top:1px solid var(--border);">
                 <button type="submit" class="btn btn-primary">Simpan Pertemuan</button>
@@ -74,7 +114,6 @@
 </div>
 </div>
 
-{# Data semester per matkul untuk JS #}
 <script>
 const matkulSemester = {
     {% for mk in mata_kuliah_list %}
@@ -96,7 +135,19 @@ function updateSemester() {
 }
 
 document.getElementById('id_mata_kuliah').addEventListener('change', updateSemester);
-// Jalankan saat load kalau sudah ada nilai terpilih
 document.addEventListener('DOMContentLoaded', updateSemester);
+
+// Auto-fill batas_absen = waktu_mulai + 2 jam jika batas_absen kosong
+document.getElementById('id_waktu_mulai').addEventListener('change', function() {
+    const batas = document.getElementById('id_batas_absen');
+    if (!batas.value) {
+        const mulai = new Date(this.value);
+        if (!isNaN(mulai)) {
+            mulai.setHours(mulai.getHours() + 2);
+            const pad = n => String(n).padStart(2, '0');
+            batas.value = `${mulai.getFullYear()}-${pad(mulai.getMonth()+1)}-${pad(mulai.getDate())}T${pad(mulai.getHours())}:${pad(mulai.getMinutes())}`;
+        }
+    }
+});
 </script>
 {% endblock %}

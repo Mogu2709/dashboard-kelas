@@ -214,6 +214,16 @@ def buat_tugas(request):
                 url=f'/tugas/{tugas.pk}/',
                 exclude_user=request.user,
             )
+            # FITUR: Jika deadline < 24 jam, langsung kirim reminder deadline juga
+            sisa_jam = (tugas.deadline - timezone.now()).total_seconds() / 3600
+            if 0 < sisa_jam <= 24:
+                _kirim_notif_semua(
+                    tipe='deadline',
+                    judul=f'⏰ Deadline {tugas.judul}',
+                    pesan=f'{tugas.mata_kuliah.nama} — sisa {tugas.sisa_waktu}',
+                    url=f'/tugas/{tugas.pk}/',
+                    exclude_user=request.user,
+                )
             messages.success(request, f'✅ Tugas "{tugas.judul}" berhasil dibuat!')
             return redirect('detail_tugas', pk=tugas.pk)
     else:

@@ -147,9 +147,32 @@ def absen_kode(request, pertemuan_id):
 
 
 class PertemuanForm(forms.ModelForm):
+    # FIX BUG 3: Tambah waktu_mulai & batas_absen agar bisa diatur dari form.
+    # Sebelumnya hanya 3 field → waktu_mulai auto-set ke saat form dibuat,
+    # bukan saat pertemuan sebenarnya.
+    waktu_mulai = forms.DateTimeField(
+        widget=forms.DateTimeInput(
+            attrs={'type': 'datetime-local'},
+            format='%Y-%m-%dT%H:%M',
+        ),
+        input_formats=['%Y-%m-%dT%H:%M'],
+        label='Waktu Mulai',
+        required=True,
+    )
+    batas_absen = forms.DateTimeField(
+        widget=forms.DateTimeInput(
+            attrs={'type': 'datetime-local'},
+            format='%Y-%m-%dT%H:%M',
+        ),
+        input_formats=['%Y-%m-%dT%H:%M'],
+        label='Batas Absen',
+        required=False,
+        help_text='Kosongkan untuk otomatis 2 jam setelah waktu mulai.',
+    )
+
     class Meta:
         model = Pertemuan
-        fields = ['mata_kuliah', 'judul', 'tanggal']
+        fields = ['mata_kuliah', 'judul', 'tanggal', 'waktu_mulai', 'batas_absen']
 
 
 @login_required
@@ -160,10 +183,29 @@ def buat_pertemuan(request):
         if form.is_valid():
             p = form.save(commit=False)
             p.dibuat_oleh = request.user
+            # Pastikan aware timezone (Railway/prod pakai UTC → convert ke WIB)
+            from django.utils import timezone as tz
+            waktu_mulai = form.cleaned_data['waktu_mulai']
+            batas_absen = form.cleaned_data.get('batas_absen')
+            if waktu_mulai and tz.is_naive(waktu_mulai):
+                waktu_mulai = tz.make_aware(waktu_mulai)
+            p.waktu_mulai = waktu_mulai
+            if batas_absen:
+                if tz.is_naive(batas_absen):
+                    batas_absen = tz.make_aware(batas_absen)
+                p.batas_absen = batas_absen
+            else:
+                # Auto: 2 jam setelah waktu_mulai (model.save() juga handle ini,
+                # tapi kita set eksplisit agar tidak overwrite)
+                from datetime import timedelta
+                p.batas_absen = waktu_mulai + timedelta(hours=2)
             p.save()
             return redirect('pertemuan_list')
     else:
-        form = PertemuanForm()
+        # Default waktu_mulai = sekarang (format datetime-local)
+        from django.utils import timezone as tz
+        now_local = tz.localtime(tz.now()).strftime('%Y-%m-%dT%H:%M')
+        form = PertemuanForm(initial={'waktu_mulai': now_local})
     return render(request, 'buat_pertemuan.html', {
         'form': form,
         'mata_kuliah_list': MataKuliah.objects.all().order_by('semester', 'nama'),

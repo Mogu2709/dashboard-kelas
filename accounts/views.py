@@ -231,7 +231,23 @@ def dashboard_view(request):
 
         total_pertemuan = Pertemuan.objects.count()
         total_hadir = Attendance.objects.filter(user=request.user).count()
-        persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+
+        # FIX BUG 4: Hitung izin+sakit approved agar persentase konsisten dengan rekap_mahasiswa
+        from attendance.models import IzinAbsen
+        from django.db.models import Count as _DCount
+        izin_counts = (
+            IzinAbsen.objects
+            .filter(user=request.user, status='approved', jenis__in=['izin', 'sakit'])
+            .values('jenis').annotate(n=_DCount('id'))
+        )
+        total_izin = total_sakit = 0
+        for row in izin_counts:
+            if row['jenis'] == 'izin': total_izin = row['n']
+            elif row['jenis'] == 'sakit': total_sakit = row['n']
+        efektif = total_hadir + total_izin + total_sakit
+        persentase = round((efektif / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+        persentase_murni = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+
         tugas_aktif = Tugas.objects.filter(deadline__gt=timezone.now()).count()
         total_materi = Materi.objects.count()
         notif_unread = Notifikasi.objects.filter(user=request.user, dibaca=False).count()
@@ -247,7 +263,11 @@ def dashboard_view(request):
             'pending_users': [],
             'total_pertemuan': total_pertemuan,
             'total_hadir': total_hadir,
+            'total_izin': total_izin,
+            'total_sakit': total_sakit,
+            'efektif': efektif,
             'persentase': persentase,
+            'persentase_murni': persentase_murni,
             'tugas_aktif': tugas_aktif,
             'total_materi': total_materi,
             'notif_unread': notif_unread,
