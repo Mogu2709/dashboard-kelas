@@ -100,7 +100,7 @@
 
             <!-- MAHASISWA MOBILE: Form submit muncul di sini di layar kecil -->
             {% if not user.is_superuser %}
-            <div class="dt-form-mobile">
+            <div class="dt-form-mobile notion-card fade" style="padding:20px;margin-bottom:16px;display:none;">
                 {% include "partials/_submit_form.html" with tugas=tugas submission=submission form=form %}
             </div>
             {% endif %}
@@ -217,12 +217,12 @@
     padding: 20px;
 }
 /* Mobile: form muncul di kiri (dt-form-mobile), sidebar disembunyikan */
-.dt-form-mobile { display: none; }
+/* dt-form-mobile hidden by default via inline style, shown on mobile via JS */
 
 @media (max-width: 860px) {
     .dt-grid { grid-template-columns: 1fr; }
-    .dt-right { display: none; }          /* sembunyikan sidebar */
-    .dt-form-mobile { display: block; }   /* tampilkan inline */
+    .dt-right { display: none; }
+    .dt-form-mobile { display: block !important; }
     .dt-sticky { position: static; }
 }
 
