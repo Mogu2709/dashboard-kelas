@@ -112,11 +112,11 @@
                 {% elif now < p.batas_absen %}<span class="chip chip-blue">● Buka</span>
                 {% else %}<span class="chip chip-gray">Ditutup</span>{% endif %}
             </div>
-            <div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                 {% if not user.is_superuser and p.id not in hadir_ids and now < p.batas_absen %}
                 <a href="{% url 'absen_kode' p.id %}" class="btn btn-primary" style="padding:5px 12px;font-size:12.5px;">🔐 Hadir</a>
                 {% endif %}
-                {% if not user.is_superuser and p.id not in hadir_ids and now >= p.batas_absen and p.id not in izin_ids %}
+                {% if not user.is_superuser and p.id not in hadir_ids and p.id not in izin_ids %}
                 <a href="{% url 'ajukan_izin' p.id %}" class="btn btn-secondary" style="padding:5px 12px;font-size:12.5px;color:#1d4ed8;">📋 Ajukan Izin</a>
                 {% elif not user.is_superuser and p.id in izin_ids %}
                 <span class="chip chip-{{ izin_status_map|get_item:p.id }}">{{ izin_label_map|get_item:p.id }}</span>
@@ -173,7 +173,8 @@
                     <div class="countdown font-mono" data-deadline="{{ p.batas_absen|date:'c' }}" style="font-size:11px;color:var(--text-tertiary);margin-bottom:6px;">⏱ <span class="time-left"></span></div>
                     <a href="{% url 'absen_kode' p.id %}" class="btn btn-primary" style="padding:6px 14px;font-size:13px;width:100%;justify-content:center;">🔐 Masukkan Kode Hadir</a>
                 </div>
-                {% elif not user.is_superuser and p.id not in hadir_ids and now >= p.batas_absen and p.id not in izin_ids %}
+                {% endif %}
+                {% if not user.is_superuser and p.id not in hadir_ids and p.id not in izin_ids %}
                 <a href="{% url 'ajukan_izin' p.id %}" class="btn btn-secondary" style="padding:6px 14px;font-size:13px;width:100%;justify-content:center;color:#1d4ed8;margin-top:4px;">📋 Ajukan Izin</a>
                 {% elif not user.is_superuser and p.id in izin_ids %}
                 <div style="margin-top:6px;"><span class="chip chip-{{ izin_status_map|get_item:p.id }}">{{ izin_label_map|get_item:p.id }}</span></div>
