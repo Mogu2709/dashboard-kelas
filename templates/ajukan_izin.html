@@ -23,15 +23,11 @@
     {% endfor %}
     {% endif %}
 
-    {% if existing and existing.status != 'pending' %}
-    <!-- Sudah diproses -->
+    {% if existing and existing.status == 'approved' %}
+    <!-- Sudah disetujui — tidak bisa ubah -->
     <div class="notion-card fade fade-1" style="padding:24px;text-align:center;">
-        <div style="font-size:40px;margin-bottom:12px;">
-            {% if existing.status == 'approved' %}✅{% else %}❌{% endif %}
-        </div>
-        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;">
-            Izin {% if existing.status == 'approved' %}Disetujui{% else %}Ditolak{% endif %}
-        </div>
+        <div style="font-size:40px;margin-bottom:12px;">✅</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;">Izin Disetujui</div>
         <div style="font-size:13px;color:var(--text-secondary);">
             {{ existing.get_jenis_display }} · {{ existing.diproses_pada|date:"d M Y, H:i" }}
         </div>
@@ -42,6 +38,22 @@
         {% endif %}
     </div>
     {% else %}
+    {% if existing and existing.status == 'rejected' %}
+    <!-- Ditolak — tampilkan info + form ajukan ulang -->
+    <div class="fade fade-1" style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start;">
+        <span style="font-size:22px;flex-shrink:0;">❌</span>
+        <div>
+            <div style="font-size:13.5px;font-weight:600;color:#b91c1c;margin-bottom:4px;">Pengajuan Sebelumnya Ditolak</div>
+            <div style="font-size:12.5px;color:#991b1b;">{{ existing.get_jenis_display }} · {{ existing.diproses_pada|date:"d M Y, H:i" }}</div>
+            {% if existing.catatan_admin %}
+            <div style="margin-top:8px;font-size:12.5px;color:#7f1d1d;padding:8px 12px;background:#fee2e2;border-radius:6px;">
+                💬 {{ existing.catatan_admin }}
+            </div>
+            {% endif %}
+            <div style="margin-top:8px;font-size:12.5px;color:#b91c1c;">Kamu bisa mengajukan ulang dengan melengkapi form di bawah.</div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="notion-card fade fade-1" style="padding:24px;max-width:520px;">
         {% if existing %}

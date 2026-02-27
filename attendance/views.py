@@ -63,7 +63,8 @@ def pertemuan_list(request):
         user=request.user).values_list('pertemuan_id', flat=True)
 
     # Data izin untuk mahasiswa
-    izin_ids = set()
+    izin_ids = set()          # semua pertemuan yang punya record izin
+    izin_rejected_ids = set() # hanya rejected → boleh ajukan ulang
     izin_status_map = {}
     izin_label_map = {}
     if not request.user.is_superuser:
@@ -73,6 +74,8 @@ def pertemuan_list(request):
         for izin in IzinAbsen.objects.filter(user=request.user).values('pertemuan_id', 'status'):
             pid = izin['pertemuan_id']
             izin_ids.add(pid)
+            if izin['status'] == 'rejected':
+                izin_rejected_ids.add(pid)
             izin_status_map[pid] = STATUS_CHIP.get(izin['status'], 'gray')
             izin_label_map[pid]  = STATUS_LABEL.get(izin['status'], izin['status'])
 
@@ -88,6 +91,7 @@ def pertemuan_list(request):
         'semester_list': semester_list,
         'hadir_ids': hadir_ids,
         'izin_ids': izin_ids,
+        'izin_rejected_ids': izin_rejected_ids,
         'izin_status_map': izin_status_map,
         'izin_label_map': izin_label_map,
         'pending_izin': pending_izin,
@@ -616,16 +620,21 @@ def ajukan_izin(request, pertemuan_id):
             })
 
         if existing:
-            # Update pengajuan yang sudah ada (kalau masih pending)
-            if existing.status != 'pending':
-                messages.error(request, 'Pengajuan sudah diproses, tidak bisa diubah.')
+            # Update pengajuan yang sudah ada (pending atau rejected boleh diajukan ulang)
+            if existing.status == 'approved':
+                messages.error(request, 'Pengajuan sudah disetujui, tidak bisa diubah.')
                 return redirect('pertemuan_list')
             existing.jenis      = jenis
             existing.keterangan = keterangan
             if bukti:
                 existing.bukti = bukti
+            # Reset ke pending saat diajukan ulang setelah rejected
+            existing.status = 'pending'
+            existing.diproses_pada = None
+            existing.diproses_oleh = None
+            existing.catatan_admin = ''
             existing.save()
-            messages.success(request, '✅ Pengajuan izin berhasil diperbarui.')
+            messages.success(request, '✅ Pengajuan izin berhasil diperbarui. Menunggu persetujuan.')
         else:
             izin = IzinAbsen(
                 user=request.user, pertemuan=pertemuan,
