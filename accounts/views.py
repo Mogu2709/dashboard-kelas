@@ -252,11 +252,31 @@ def dashboard_view(request):
         total_materi = Materi.objects.count()
         notif_unread = Notifikasi.objects.filter(user=request.user, dibaca=False).count()
 
-        pertemuan_terbaru = Pertemuan.objects.order_by('-tanggal')[:5]
-        hadir_ids = Attendance.objects.filter(
+        pertemuan_terbaru = Pertemuan.objects.select_related('mata_kuliah').order_by('-tanggal')[:5]
+        hadir_ids = set(Attendance.objects.filter(
             user=request.user,
             pertemuan__in=pertemuan_terbaru
-        ).values_list('pertemuan_id', flat=True)
+        ).values_list('pertemuan_id', flat=True))
+
+        # Ambil status izin untuk pertemuan terbaru agar ditampilkan di dashboard
+        from attendance.models import IzinAbsen
+        izin_map_dashboard = {}
+        for izin in IzinAbsen.objects.filter(
+            user=request.user,
+            pertemuan__in=pertemuan_terbaru
+        ).values('pertemuan_id', 'status', 'jenis'):
+            izin_map_dashboard[izin['pertemuan_id']] = izin
+
+        # Tugas aktif dengan info deadline terdekat
+        tugas_aktif_list = Tugas.objects.filter(
+            deadline__gt=timezone.now()
+        ).select_related('mata_kuliah').order_by('deadline')[:3]
+
+        # Nilai tugas terbaru
+        from tasks.models import TugasSubmission
+        nilai_terbaru = TugasSubmission.objects.filter(
+            user=request.user, nilai__isnull=False
+        ).select_related('tugas', 'tugas__mata_kuliah').order_by('-dinilai_pada')[:3]
 
         context = {
             'is_ketua': False,
@@ -269,10 +289,13 @@ def dashboard_view(request):
             'persentase': persentase,
             'persentase_murni': persentase_murni,
             'tugas_aktif': tugas_aktif,
+            'tugas_aktif_list': tugas_aktif_list,
+            'nilai_terbaru': nilai_terbaru,
             'total_materi': total_materi,
             'notif_unread': notif_unread,
             'pertemuan_terbaru': pertemuan_terbaru,
-            'hadir_ids': list(hadir_ids),
+            'hadir_ids': hadir_ids,
+            'izin_map_dashboard': izin_map_dashboard,
         }
 
     return render(request, 'dashboard.html', context)

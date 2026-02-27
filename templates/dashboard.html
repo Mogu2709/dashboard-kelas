@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load dict_extras %}
 {% block nav_home %}active{% endblock %}
 
 {% block content %}
@@ -358,39 +359,123 @@
         </div>
     </div>
 
-    {# ── Row 2: Riwayat pertemuan terbaru ─────────────────────────────────── #}
-    <div class="notion-card fade fade-2" style="overflow:hidden;">
-        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;">
-            <div>
-                <div style="font-size:13.5px;font-weight:600;color:var(--text);">📅 Pertemuan Terbaru</div>
-                <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px;">Status kehadiranmu di 5 sesi terakhir</div>
+    {# ── Row 2: grid 2 kolom — Pertemuan + Tugas/Nilai ───────────────────── #}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="mhs-row2-grid fade fade-2">
+
+        {# Pertemuan terbaru dengan status izin #}
+        <div class="notion-card" style="overflow:hidden;">
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:var(--text);">📅 Pertemuan Terbaru</div>
+                    <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px;">5 sesi terakhir</div>
+                </div>
+                <a href="{% url 'pertemuan_list' %}" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">Semua →</a>
             </div>
-            <a href="{% url 'pertemuan_list' %}" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">Lihat Semua →</a>
-        </div>
-        {% for p in pertemuan_terbaru %}
-        <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #f7f7f5;transition:background 0.1s;" onmouseover="this.style.background='#fafaf8'" onmouseout="this.style.background=''">
-            {# Status badge #}
-            {% if p.id in hadir_ids %}
-            <div style="width:32px;height:32px;border-radius:8px;background:#eefaf4;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">✅</div>
-            {% else %}
-            <div style="width:32px;height:32px;border-radius:8px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">❌</div>
-            {% endif %}
-            <div style="flex:1;min-width:0;">
-                <div style="font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.judul }}</div>
-                <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px;">{{ p.mata_kuliah.nama }} · {{ p.tanggal|date:"d M Y" }}</div>
+            {% for p in pertemuan_terbaru %}
+            {% with izin=izin_map_dashboard|default:"" %}
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid #f7f7f5;transition:background 0.1s;" onmouseover="this.style.background='#fafaf8'" onmouseout="this.style.background=''">
+                {% if p.id in hadir_ids %}
+                <div style="width:30px;height:30px;border-radius:7px;background:#eefaf4;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">✅</div>
+                {% elif izin_map_dashboard and p.id in izin_map_dashboard %}
+                    {% with iz=izin_map_dashboard|get_item:p.id %}
+                    {% if iz.status == 'approved' %}
+                    <div style="width:30px;height:30px;border-radius:7px;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">📋</div>
+                    {% elif iz.status == 'pending' %}
+                    <div style="width:30px;height:30px;border-radius:7px;background:#fefce8;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">⏳</div>
+                    {% else %}
+                    <div style="width:30px;height:30px;border-radius:7px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">❌</div>
+                    {% endif %}
+                    {% endwith %}
+                {% else %}
+                <div style="width:30px;height:30px;border-radius:7px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">❌</div>
+                {% endif %}
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.judul }}</div>
+                    <div style="font-size:11px;color:var(--text-tertiary);margin-top:1px;">{{ p.mata_kuliah.nama }} · {{ p.tanggal|date:"d M" }}</div>
+                </div>
+                {% if p.id in hadir_ids %}
+                <span class="chip chip-green" style="font-size:10.5px;flex-shrink:0;">Hadir</span>
+                {% elif izin_map_dashboard and p.id in izin_map_dashboard %}
+                    {% with iz=izin_map_dashboard|get_item:p.id %}
+                    {% if iz.status == 'approved' %}
+                    <span class="chip" style="font-size:10.5px;flex-shrink:0;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;">✓ Izin</span>
+                    {% elif iz.status == 'pending' %}
+                    <span class="chip chip-yellow" style="font-size:10.5px;flex-shrink:0;">⏳ Menunggu</span>
+                    {% else %}
+                    <span class="chip chip-red" style="font-size:10.5px;flex-shrink:0;">✗ Ditolak</span>
+                    {% endif %}
+                    {% endwith %}
+                {% else %}
+                <span class="chip chip-red" style="font-size:10.5px;flex-shrink:0;">Alpha</span>
+                {% endif %}
             </div>
-            {% if p.id in hadir_ids %}
-            <span class="chip chip-green" style="font-size:11px;flex-shrink:0;">Hadir</span>
-            {% else %}
-            <span class="chip chip-red" style="font-size:11px;flex-shrink:0;">Tidak Hadir</span>
+            {% endwith %}
+            {% empty %}
+            <div style="padding:32px;text-align:center;color:var(--text-tertiary);font-size:13px;">
+                <div style="font-size:28px;margin-bottom:8px;">📅</div>Belum ada pertemuan
+            </div>
+            {% endfor %}
+        </div>
+
+        {# Tugas deadline + nilai terbaru #}
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+            {# Tugas deadline terdekat #}
+            <div class="notion-card" style="overflow:hidden;flex:1;">
+                <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+                    <div style="font-size:13.5px;font-weight:600;color:var(--text);">⏰ Deadline Terdekat</div>
+                    <a href="{% url 'tugas_list' %}?status=aktif" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">Semua →</a>
+                </div>
+                {% if tugas_aktif_list %}
+                {% for tugas in tugas_aktif_list %}
+                <a href="{% url 'detail_tugas' tugas.pk %}" style="text-decoration:none;display:block;padding:11px 20px;border-bottom:1px solid #f7f7f5;transition:background 0.1s;" onmouseover="this.style.background='#fafaf8'" onmouseout="this.style.background=''">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ tugas.judul }}</div>
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">{{ tugas.mata_kuliah.nama }}</div>
+                        </div>
+                        <div style="text-align:right;flex-shrink:0;">
+                            <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:600;
+                                {% if tugas.sisa_waktu and 'menit' in tugas.sisa_waktu or tugas.sisa_waktu and 'jam' in tugas.sisa_waktu %}color:#b91c1c;
+                                {% elif tugas.sisa_waktu and '1 hari' in tugas.sisa_waktu %}color:#d97706;
+                                {% else %}color:var(--text-secondary);{% endif %}">{{ tugas.sisa_waktu }}</div>
+                            <div style="font-size:10.5px;color:var(--text-tertiary);">{{ tugas.deadline|date:"d M, H:i" }}</div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+                {% else %}
+                <div style="padding:24px;text-align:center;color:var(--text-tertiary);font-size:13px;">
+                    <div style="font-size:24px;margin-bottom:6px;">🎉</div>Tidak ada tugas aktif
+                </div>
+                {% endif %}
+            </div>
+
+            {# Nilai terbaru #}
+            {% if nilai_terbaru %}
+            <div class="notion-card" style="overflow:hidden;">
+                <div style="padding:14px 20px;border-bottom:1px solid var(--border);">
+                    <div style="font-size:13.5px;font-weight:600;color:var(--text);">🏆 Nilai Terbaru</div>
+                </div>
+                {% for sub in nilai_terbaru %}
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid #f7f7f5;">
+                    <div style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:'IBM Plex Mono',monospace;flex-shrink:0;
+                        {% if sub.grade_label == 'A' %}background:#eefaf4;color:#1a7f4b;
+                        {% elif sub.grade_label == 'B' %}background:#eff6ff;color:#1d4ed8;
+                        {% elif sub.grade_label == 'C' %}background:#fefce8;color:#854d0e;
+                        {% else %}background:#fef2f2;color:#b91c1c;{% endif %}">
+                        {{ sub.grade_label }}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ sub.tugas.judul }}</div>
+                        <div style="font-size:11px;color:var(--text-tertiary);">{{ sub.tugas.mata_kuliah.nama }} · {{ sub.nilai }}/100</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
             {% endif %}
+
         </div>
-        {% empty %}
-        <div style="padding:32px;text-align:center;color:var(--text-tertiary);font-size:13px;">
-            <div style="font-size:28px;margin-bottom:8px;">📅</div>
-            Belum ada pertemuan
-        </div>
-        {% endfor %}
     </div>
 
 </div>
@@ -409,6 +494,7 @@ window.addEventListener('load', function() {
 <style>
 @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr !important; } }
 @media (max-width: 680px) { .mhs-hero-grid { grid-template-columns: 1fr !important; } }
+@media (max-width: 860px) { .mhs-row2-grid { grid-template-columns: 1fr !important; } }
 @media (max-width: 640px) { .stat-grid { grid-template-columns: 1fr 1fr !important; } }
 @media (max-width: 400px) { .stat-grid { grid-template-columns: 1fr !important; } }
 @keyframes pulse {

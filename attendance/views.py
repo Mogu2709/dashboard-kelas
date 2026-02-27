@@ -717,7 +717,16 @@ def proses_izin(request, izin_id):
             pesan=f'{izin.pertemuan.judul} · {izin.pertemuan.mata_kuliah.nama}',
             url='/absensi/',
         )
-        messages.success(request, f'Izin {"disetujui" if action == "approve" else "ditolak"}.')
+        # Gunakan URL parameter bukan messages agar tidak bocor ke halaman lain
+        next_url = request.POST.get('next', 'daftar_izin')
+        status_msg = 'disetujui' if action == 'approve' else 'ditolak'
+        # Redirect ke daftar_izin dengan query param sebagai feedback
+        from django.urls import reverse
+        try:
+            redirect_url = reverse(next_url)
+        except Exception:
+            redirect_url = next_url
+        return redirect(f'{redirect_url}?status_msg={status_msg}')
 
     return redirect(request.POST.get('next', 'daftar_izin'))
 
