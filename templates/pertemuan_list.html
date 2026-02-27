@@ -113,7 +113,7 @@
                 {% else %}<span class="chip chip-gray">Ditutup</span>{% endif %}
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                {% if not user.is_superuser and p.id not in hadir_ids and now < p.batas_absen %}
+                {% if not user.is_superuser and p.id not in hadir_ids and now < p.batas_absen and p.id not in izin_ids or not user.is_superuser and p.id not in hadir_ids and now < p.batas_absen and p.id in izin_rejected_ids %}
                 <a href="{% url 'absen_kode' p.id %}" class="btn btn-primary" style="padding:5px 12px;font-size:12.5px;">🔐 Hadir</a>
                 {% endif %}
                 {% if not user.is_superuser and p.id not in hadir_ids and p.id not in izin_ids or not user.is_superuser and p.id not in hadir_ids and p.id in izin_rejected_ids %}
@@ -169,7 +169,7 @@
                     <span>📅 {{ p.tanggal }}</span>
                     <span>👥 {{ p.jumlah_hadir }} hadir</span>
                 </div>
-                {% if not user.is_superuser and p.id not in hadir_ids and now < p.batas_absen %}
+                {% if not user.is_superuser and p.id not in hadir_ids and now < p.batas_absen and p.id not in izin_ids or not user.is_superuser and p.id not in hadir_ids and now < p.batas_absen and p.id in izin_rejected_ids %}
                 <div style="width:100%;">
                     <div class="countdown font-mono" data-deadline="{{ p.batas_absen|date:'c' }}" style="font-size:11px;color:var(--text-tertiary);margin-bottom:6px;">⏱ <span class="time-left"></span></div>
                     <a href="{% url 'absen_kode' p.id %}" class="btn btn-primary" style="padding:6px 14px;font-size:13px;width:100%;justify-content:center;">🔐 Masukkan Kode Hadir</a>

@@ -121,6 +121,12 @@ def absen_kode(request, pertemuan_id):
     if Attendance.objects.filter(user=request.user, pertemuan=pertemuan).exists():
         return redirect('pertemuan_list')
 
+    # FIX BUG: Izin sudah disetujui → tidak boleh hadir
+    from .models import IzinAbsen
+    if IzinAbsen.objects.filter(user=request.user, pertemuan=pertemuan, status='approved').exists():
+        messages.error(request, '⚠️ Kamu sudah tercatat izin/sakit di pertemuan ini.')
+        return redirect('pertemuan_list')
+
     # Waktu sudah habis
     if not pertemuan.kode_aktif:
         return render(request, 'absen_kode.html', {
