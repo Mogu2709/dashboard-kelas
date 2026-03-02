@@ -102,11 +102,12 @@ if CLOUDINARY_CLOUD_NAME:
         'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
         'API_KEY': config('CLOUDINARY_API_KEY'),
         'API_SECRET': config('CLOUDINARY_API_SECRET'),
-        'RESOURCE_TYPE': 'raw',
+        'SECURE': True,           # Pakai HTTPS
+        'MAGIC_FILE_PATH': None,  # Disable magic file check agar semua tipe file diterima
     }
     STORAGES = {
         "default": {
-            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+            "BACKEND": "cloudinary_storage.storage.RawMediaCloudinaryStorage",  # FIX: pakai Raw agar PDF/Word dll bisa diupload
         },
         "staticfiles": {
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",

@@ -19,14 +19,19 @@
 
     <!-- Messages -->
 
-    <!-- Filter scrollable -->
-    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:20px;padding-bottom:2px;" class="fade fade-1">
-        <div style="display:flex;gap:6px;min-width:max-content;">
-            <a href="{% url 'materi_list' %}" class="btn {% if not mk_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 14px;white-space:nowrap;">Semua</a>
-            {% for mk in mata_kuliah_list %}
-            <a href="?mk={{ mk.id }}" class="btn {% if mk_filter == mk.id|stringformat:'s' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 14px;white-space:nowrap;">{{ mk.nama }}</a>
-            {% endfor %}
-        </div>
+    <!-- Filter dropdown ringkas seperti tugas -->
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px;" class="fade fade-1">
+        <form method="get" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <select name="mk" onchange="this.form.submit()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;cursor:pointer;outline:none;">
+                <option value="">Semua Mata Kuliah</option>
+                {% for mk in mata_kuliah_list %}
+                <option value="{{ mk.id }}" {% if mk_filter == mk.id|stringformat:"s" %}selected{% endif %}>{{ mk.nama }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% if mk_filter %}
+        <a href="{% url 'materi_list' %}" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">✕ Reset</a>
+        {% endif %}
     </div>
 
     <!-- Materi list as table-style rows -->
