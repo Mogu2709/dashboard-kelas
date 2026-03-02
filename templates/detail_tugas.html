@@ -34,17 +34,6 @@
 
 <div class="page-content">
 
-    {% if messages %}
-    {% for message in messages %}
-    <div style="padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;
-        {% if message.tags == 'success' %}background:#eefaf4;border:1px solid #c3e9d2;color:#1a7f4b;
-        {% elif message.tags == 'error' %}background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
-        {% else %}background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;{% endif %}">
-        {{ message }}
-    </div>
-    {% endfor %}
-    {% endif %}
-
     <div class="dt-grid" id="layout-grid">
 
         <!-- LEFT: Info tugas -->
@@ -246,24 +235,43 @@
 </style>
 
 <script>
-function updateFileLabel(input) {
-    const label = document.getElementById('drop-label');
+// FIX: Pakai class bukan id agar tidak konflik saat partial di-include 2x
+function updateFileLabelLocal(input) {
+    // Cari label terdekat di dalam drop zone yang sama
+    const dropZone = input.closest('.drop-zone-area');
+    if (!dropZone) return;
+    const label = dropZone.querySelector('.drop-label');
+    if (!label) return;
     if (input.files && input.files[0]) {
         const file = input.files[0];
         const size = file.size < 1024*1024 ? (file.size/1024).toFixed(1)+' KB' : (file.size/1024/1024).toFixed(1)+' MB';
         label.innerHTML = `<strong style="color:var(--text);">📄 ${file.name}</strong><br><span style="font-size:11px;">${size}</span>`;
+        dropZone.style.borderColor = 'var(--green)';
+        dropZone.style.background = 'var(--green-bg)';
     }
 }
-const dropZone = document.getElementById('drop-zone');
-if (dropZone) {
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor='var(--border-hover)'; dropZone.style.background='var(--bg-tertiary)'; });
-    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor='var(--border)'; dropZone.style.background='var(--bg-secondary)'; });
-    dropZone.addEventListener('drop', (e) => {
+
+// Drag & drop — pasang ke semua drop zone yang ada di halaman
+document.querySelectorAll('.drop-zone-area').forEach(function(dropZone) {
+    dropZone.addEventListener('dragover', function(e) {
         e.preventDefault();
-        const input = document.getElementById('id_file_jawaban');
-        if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; updateFileLabel(input); }
-        dropZone.style.borderColor='var(--border)'; dropZone.style.background='var(--bg-secondary)';
+        dropZone.style.borderColor = 'var(--border-hover)';
+        dropZone.style.background = 'var(--bg-tertiary)';
     });
-}
+    dropZone.addEventListener('dragleave', function() {
+        dropZone.style.borderColor = 'var(--border)';
+        dropZone.style.background = 'var(--bg-secondary)';
+    });
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        const input = dropZone.querySelector('.file-input-hidden');
+        if (input && e.dataTransfer.files.length) {
+            input.files = e.dataTransfer.files;
+            updateFileLabelLocal(input);
+        }
+        dropZone.style.borderColor = 'var(--border)';
+        dropZone.style.background = 'var(--bg-secondary)';
+    });
+});
 </script>
 {% endblock %}

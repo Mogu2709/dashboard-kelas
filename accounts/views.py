@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from django import forms
 
 from attendance.models import Pertemuan, Attendance
@@ -129,7 +130,7 @@ def dashboard_view(request):
         )
         absen_parah = []
         for mhs in mahasiswa_qs:
-            persen = round((mhs.total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+            persen = min(round((mhs.total_hadir / total_pertemuan) * 100, 1), 100.0) if total_pertemuan > 0 else 0
             if persen < 75:
                 absen_parah.append({
                     'user': mhs,
@@ -139,9 +140,10 @@ def dashboard_view(request):
         absen_parah.sort(key=lambda x: x['persentase'])
 
         # Rata-rata kehadiran kelas
+        # FIX BUG: denom bisa 0 kalau total_mahasiswa=0 walau total_pertemuan>0
         total_attendance = Attendance.objects.count()
-        rata_hadir = round((total_attendance / (total_pertemuan * total_mahasiswa)) * 100, 1) \
-            if total_pertemuan > 0 and total_mahasiswa > 0 else 0
+        _denom = total_pertemuan * total_mahasiswa
+        rata_hadir = min(round((total_attendance / _denom) * 100, 1), 100.0) if _denom > 0 else 0
 
         # ── Tugas ─────────────────────────────────────────────────────────────
         from django.utils import timezone
@@ -191,7 +193,7 @@ def dashboard_view(request):
             {
                 'pertemuan': pt,
                 'jumlah_hadir': pt.jumlah_hadir,
-                'persen_hadir': round((pt.jumlah_hadir / total_mahasiswa) * 100) if total_mahasiswa > 0 else 0,
+                'persen_hadir': min(round((pt.jumlah_hadir / total_mahasiswa) * 100), 100) if total_mahasiswa > 0 else 0,
             }
             for pt in pertemuan_terbaru_qs
         ]
@@ -245,8 +247,8 @@ def dashboard_view(request):
             if row['jenis'] == 'izin': total_izin = row['n']
             elif row['jenis'] == 'sakit': total_sakit = row['n']
         efektif = total_hadir + total_izin + total_sakit
-        persentase = round((efektif / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
-        persentase_murni = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+        persentase = min(round((efektif / total_pertemuan) * 100, 1), 100.0) if total_pertemuan > 0 else 0
+        persentase_murni = min(round((total_hadir / total_pertemuan) * 100, 1), 100.0) if total_pertemuan > 0 else 0
 
         tugas_aktif = Tugas.objects.filter(deadline__gt=timezone.now()).count()
         total_materi = Materi.objects.count()
@@ -315,7 +317,7 @@ def profil_view(request):
 
     total_hadir = Attendance.objects.filter(user=request.user).count()
     total_pertemuan = Pertemuan.objects.count()
-    persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+    persentase = min(round((total_hadir / total_pertemuan) * 100, 1), 100.0) if total_pertemuan > 0 else 0
 
     # Riwayat kehadiran untuk profil lengkap
     riwayat_hadir = (
@@ -341,7 +343,7 @@ def profil_view(request):
     for mk in MataKuliah.objects.all():
         total_mk = pertemuan_per_mk.get(mk.id, 0)
         hadir_mk = hadir_per_mk.get(mk.id, 0)
-        persen_mk = round((hadir_mk / total_mk) * 100, 1) if total_mk > 0 else 0
+        persen_mk = min(round((hadir_mk / total_mk) * 100, 1), 100.0) if total_mk > 0 else 0
         stats_mk.append({'mk': mk, 'total': total_mk, 'hadir': hadir_mk, 'persen': persen_mk})
 
     return render(request, 'profil.html', {
@@ -371,7 +373,7 @@ def profil_user_view(request, user_id):
 
     total_hadir = Attendance.objects.filter(user=target_user).count()
     total_pertemuan = Pertemuan.objects.count()
-    persentase = round((total_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+    persentase = min(round((total_hadir / total_pertemuan) * 100, 1), 100.0) if total_pertemuan > 0 else 0
 
     # Riwayat kehadiran untuk superuser lihat profil mahasiswa
     riwayat_hadir = (
@@ -397,7 +399,7 @@ def profil_user_view(request, user_id):
     for mk in MataKuliah.objects.all():
         total_mk = pertemuan_per_mk.get(mk.id, 0)
         hadir_mk = hadir_per_mk.get(mk.id, 0)
-        persen_mk = round((hadir_mk / total_mk) * 100, 1) if total_mk > 0 else 0
+        persen_mk = min(round((hadir_mk / total_mk) * 100, 1), 100.0) if total_mk > 0 else 0
         stats_mk.append({'mk': mk, 'total': total_mk, 'hadir': hadir_mk, 'persen': persen_mk})
 
     # Nilai tugas untuk superuser lihat profil mahasiswa
@@ -426,14 +428,19 @@ def profil_user_view(request, user_id):
 
 
 def _simpan_profil(request, profile):
-    """Helper: simpan data profil dari POST."""
-    profile.nama_lengkap  = request.POST.get('nama_lengkap', '').strip()
-    profile.nim           = request.POST.get('nim', '').strip()
-    profile.jurusan       = request.POST.get('jurusan', '').strip()
-    profile.jenis_kelamin = request.POST.get('jenis_kelamin', '')
+    """Helper: simpan data profil dari POST dengan validasi."""
+    profile.nama_lengkap  = request.POST.get('nama_lengkap', '').strip()[:150]
+    profile.nim           = request.POST.get('nim', '').strip()[:20]
+    profile.jurusan       = request.POST.get('jurusan', '').strip()[:100]
+    jk = request.POST.get('jenis_kelamin', '')
+    profile.jenis_kelamin = jk if jk in ('L', 'P') else ''
     angkatan = request.POST.get('angkatan', '').strip()
-    profile.angkatan      = int(angkatan) if angkatan.isdigit() else None
-
+    if angkatan.isdigit():
+        year = int(angkatan)
+        # Validasi tahun angkatan masuk akal
+        profile.angkatan = year if 2000 <= year <= 2040 else None
+    else:
+        profile.angkatan = None
     profile.save()
 
 
@@ -456,36 +463,40 @@ def kelola_user_view(request):
 
 
 @login_required
+@require_POST
 def approve_user_view(request, user_id):
     if not request.user.is_superuser:
         return redirect('dashboard')
-    if request.method == 'POST':
-        profile = get_object_or_404(UserProfile, user_id=user_id)
-        profile.status = 'approved'
-        profile.diproses_pada = timezone.now()
-        profile.diproses_oleh = request.user
-        profile.save()
+    profile = get_object_or_404(UserProfile, user_id=user_id)
+    profile.status = 'approved'
+    profile.diproses_pada = timezone.now()
+    profile.diproses_oleh = request.user
+    profile.save()
+    messages.success(request, f'✅ {profile.user.username} berhasil disetujui.')
     return redirect('kelola_user')
 
 
 @login_required
+@require_POST
 def reject_user_view(request, user_id):
     if not request.user.is_superuser:
         return redirect('dashboard')
-    if request.method == 'POST':
-        profile = get_object_or_404(UserProfile, user_id=user_id)
-        profile.status = 'rejected'
-        profile.diproses_pada = timezone.now()
-        profile.diproses_oleh = request.user
-        profile.save()
+    profile = get_object_or_404(UserProfile, user_id=user_id)
+    profile.status = 'rejected'
+    profile.diproses_pada = timezone.now()
+    profile.diproses_oleh = request.user
+    profile.save()
+    messages.success(request, f'❌ {profile.user.username} berhasil ditolak.')
     return redirect('kelola_user')
 
 
 @login_required
+@require_POST
 def hapus_user_view(request, user_id):
     if not request.user.is_superuser:
         return redirect('dashboard')
-    if request.method == 'POST':
-        user = get_object_or_404(User, id=user_id, is_superuser=False)
-        user.delete()
+    user = get_object_or_404(User, id=user_id, is_superuser=False)
+    username = user.username
+    user.delete()
+    messages.success(request, f'🗑️ User {username} berhasil dihapus.')
     return redirect('kelola_user')

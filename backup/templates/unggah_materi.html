@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block nav_materi %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div style="margin-bottom:10px;">
+        <a href="{% url 'materi_list' %}" style="font-size:13px;color:var(--text-secondary);text-decoration:none;">← Kembali ke Materi</a>
+    </div>
+    <span class="page-emoji">{% if mode == 'edit' %}✏️{% else %}⬆️{% endif %}</span>
+    <h1 class="page-title">{% if mode == 'edit' %}Edit Materi{% else %}Unggah Materi{% endif %}</h1>
+    <p class="page-subtitle">{% if mode == 'edit' %}Perbarui detail materi{% else %}Upload materi perkuliahan untuk seluruh anggota kelas{% endif %}</p>
+</div>
+
+<div class="page-content">
+    <div style="max-width:600px;">
+        <form method="post" enctype="multipart/form-data" class="fade fade-1">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div style="padding:12px 16px;border-radius:8px;margin-bottom:16px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:13px;">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- Mata Kuliah -->
+            <div style="margin-bottom:18px;">
+                <label style="font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:6px;">Mata Kuliah *</label>
+                {{ form.mata_kuliah }}
+                {% if form.mata_kuliah.errors %}<div style="color:#b91c1c;font-size:12px;margin-top:4px;">{{ form.mata_kuliah.errors.0 }}</div>{% endif %}
+            </div>
+
+            <!-- Judul -->
+            <div style="margin-bottom:18px;">
+                <label style="font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:6px;">Judul Materi *</label>
+                {{ form.judul }}
+                {% if form.judul.errors %}<div style="color:#b91c1c;font-size:12px;margin-top:4px;">{{ form.judul.errors.0 }}</div>{% endif %}
+            </div>
+
+            <!-- Deskripsi -->
+            <div style="margin-bottom:18px;">
+                <label style="font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:6px;">Deskripsi <span style="color:var(--text-tertiary);font-weight:400;">(opsional)</span></label>
+                {{ form.deskripsi }}
+                {% if form.deskripsi.errors %}<div style="color:#b91c1c;font-size:12px;margin-top:4px;">{{ form.deskripsi.errors.0 }}</div>{% endif %}
+            </div>
+
+            <!-- File -->
+            <div style="margin-bottom:28px;">
+                <label style="font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:6px;">File Materi</label>
+                {% if mode == 'edit' and materi.file %}
+                <div style="padding:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:7px;margin-bottom:8px;font-size:13px;display:flex;align-items:center;gap:8px;">
+                    <span>📄</span>
+                    <a href="{{ materi.file.url }}" target="_blank" style="color:var(--text);text-decoration:none;flex:1;">{{ materi.nama_file }}</a>
+                    <span style="font-size:11px;color:var(--text-tertiary);">{{ materi.ukuran_display }}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;">Upload file baru untuk mengganti:</div>
+                {% endif %}
+                <div id="materi-drop" onclick="document.getElementById('id_file').click()" style="border:2px dashed var(--border);border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--bg-secondary);" onmouseover="this.style.borderColor='var(--border-hover)';this.style.background='var(--bg-tertiary)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg-secondary)'">
+                    <div style="font-size:32px;margin-bottom:8px;">📂</div>
+                    <div id="materi-label" style="font-size:13px;color:var(--text-secondary);">Klik atau drag & drop file di sini</div>
+                    <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:4px;">PDF, Word, PPT, Excel, JPG, ZIP — maks. 20MB</div>
+                    <input type="file" id="id_file" name="file" style="display:none;" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.zip,.rar" onchange="updateMateriLabel(this)">
+                </div>
+                {% if form.file.errors %}<div style="color:#b91c1c;font-size:12px;margin-top:4px;">{{ form.file.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button type="submit" class="btn btn-primary">
+                    {% if mode == 'edit' %}✅ Simpan Perubahan{% else %}⬆️ Unggah Materi{% endif %}
+                </button>
+                <a href="{% url 'materi_list' %}" class="btn btn-secondary">Batal</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.1s;
+    line-height: 1.5;
+}
+.form-input:focus { border-color: var(--border-hover); box-shadow: 0 0 0 3px rgba(0,0,0,0.04); }
+</style>
+
+<script>
+function updateMateriLabel(input) {
+    const label = document.getElementById('materi-label');
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const size = file.size < 1024*1024 ? (file.size/1024).toFixed(1)+' KB' : (file.size/1024/1024).toFixed(1)+' MB';
+        label.innerHTML = `<strong style="color:var(--text);">📄 ${file.name}</strong><br><span style="font-size:11px;">${size}</span>`;
+    }
+}
+
+const dropZone = document.getElementById('materi-drop');
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor='var(--border-hover)'; });
+dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor='var(--border)'; });
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('id_file');
+    if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; updateMateriLabel(input); }
+    dropZone.style.borderColor = 'var(--border)';
+});
+</script>
+{% endblock %}

@@ -211,6 +211,8 @@ class Notifikasi(models.Model):
         ('materi_baru', 'Materi Baru'),
         ('deadline', 'Deadline Mendekat'),
         ('pengumuman', 'Pengumuman Baru'),
+        ('absensi', 'Absensi'),
+        ('izin', 'Izin Absen'),
     ]
 
     user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifikasi')
@@ -233,7 +235,9 @@ class Notifikasi(models.Model):
             'tugas_baru': '📝',
             'materi_baru': '📚',
             'deadline': '⏰',
-            'pengumuman': '🔔'
+            'pengumuman': '🔔',
+            'absensi': '📋',
+            'izin': '📩',
         }.get(self.tipe, '🔔')
 
     @property

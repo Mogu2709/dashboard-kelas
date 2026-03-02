@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block nav_profil %}active{% endblock %}
+
+{% block content %}
+<div class="page-header fade">
+    <span class="page-emoji">👤</span>
+    <h1 class="page-title">Profil</h1>
+    <p class="page-subtitle">{% if is_own_profile %}Informasi dan pengaturan akunmu{% else %}Profil {{ profile.display_name }}{% endif %}</p>
+</div>
+
+<div class="page-content">
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="fade" style="margin-bottom:16px;padding:11px 15px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;
+        {% if message.tags == 'success' %}background:#f0fdf4;border:1px solid #c3e9d2;color:#166534;
+        {% else %}background:#fef2f2;border:1px solid #fecaca;color:#991b1b;{% endif %}">
+        {% if message.tags == 'success' %}✓{% else %}⚠{% endif %} {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div style="display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;" class="profil-grid">
+
+        <!-- Kartu Identitas -->
+        <div class="notion-card fade fade-1 profil-avatar-card" style="padding:24px 20px;text-align:center;">
+            <div class="avatar-img" style="width:64px;height:64px;border-radius:14px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-family:'Lora',serif;font-size:24px;font-weight:600;margin:0 auto 14px;">
+                {{ profile.inisial }}
+            </div>
+            <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;">{{ profile.display_name }}</div>
+            <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">@{{ profile.user.username }}</div>
+
+            {% if profile.user.is_superuser %}
+            <span style="background:var(--text);color:white;font-size:11px;font-weight:600;padding:4px 12px;border-radius:100px;">👑 Ketua Kelas</span>
+            {% else %}
+            <span style="background:#f0fdf4;color:#166534;border:1px solid #c3e9d2;font-size:11px;font-weight:600;padding:4px 12px;border-radius:100px;">🎓 Mahasiswa</span>
+            {% endif %}
+
+            {% if profile.nim %}
+            <div style="margin-top:14px;padding:10px;background:var(--bg-secondary);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-secondary);">{{ profile.nim }}</div>
+            {% endif %}
+
+            {% if not profile.user.is_superuser %}
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div>
+                        <div style="font-family:'Lora',serif;font-size:22px;font-weight:600;color:var(--text);">{{ total_hadir }}</div>
+                        <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">Hadir</div>
+                    </div>
+                    <div>
+                        <div style="font-family:'Lora',serif;font-size:22px;font-weight:600;color:{% if persentase >= 75 %}#1a7f4b{% elif persentase >= 50 %}#854d0e{% else %}#b91c1c{% endif %};">{{ persentase }}%</div>
+                        <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">Hadir</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Form Edit -->
+        <div class="notion-card fade fade-2" style="padding:24px;">
+            <div style="font-size:13.5px;font-weight:500;color:var(--text);margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+                {% if is_own_profile %}Edit Profil{% else %}Data Mahasiswa{% endif %}
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="form-grid">
+
+                    <div style="grid-column:1/-1;">
+                        <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Nama Lengkap</label>
+                        <input type="text" name="nama_lengkap" value="{{ profile.nama_lengkap }}" placeholder="Nama sesuai KTP"
+                            {% if not can_edit %}disabled{% endif %}
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'Geist',sans-serif;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
+                            onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+                    </div>
+
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">NIM</label>
+                        <input type="text" name="nim" value="{{ profile.nim }}" placeholder="Nomor Induk Mahasiswa"
+                            {% if not can_edit %}disabled{% endif %}
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
+                            onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+                    </div>
+
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Angkatan</label>
+                        <input type="number" name="angkatan" value="{{ profile.angkatan|default:'' }}" placeholder="2023" min="2000" max="2099"
+                            {% if not can_edit %}disabled{% endif %}
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'IBM Plex Mono',monospace;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
+                            onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+                    </div>
+
+                    <div style="grid-column:1/-1;">
+                        <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Jurusan / Program Studi</label>
+                        <input type="text" name="jurusan" value="{{ profile.jurusan }}" placeholder="Contoh: Teknik Informatika"
+                            {% if not can_edit %}disabled{% endif %}
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'Geist',sans-serif;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;transition:border-color 0.15s,box-shadow 0.15s;"
+                            onfocus="this.style.borderColor='#1a1a1a';this.style.boxShadow='0 0 0 3px rgba(26,26,26,0.07)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+                    </div>
+
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Jenis Kelamin</label>
+                        <select name="jenis_kelamin" {% if not can_edit %}disabled{% endif %}
+                            style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:'Geist',sans-serif;background:{% if can_edit %}white{% else %}var(--bg-secondary){% endif %};color:var(--text);outline:none;cursor:{% if can_edit %}pointer{% else %}default{% endif %};"
+                            onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='var(--border)'">
+                            <option value="">-- Pilih --</option>
+                            <option value="L" {% if profile.jenis_kelamin == 'L' %}selected{% endif %}>Laki-laki</option>
+                            <option value="P" {% if profile.jenis_kelamin == 'P' %}selected{% endif %}>Perempuan</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                {% if can_edit %}
+                <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                    <a href="{% if is_own_profile %}{% url 'profil' %}{% else %}{% url 'profil_user' profile.user.id %}{% endif %}" class="btn btn-secondary">Batal</a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<style>
+@media (max-width: 680px) {
+    .profil-grid { grid-template-columns: 1fr !important; }
+    .form-grid { grid-template-columns: 1fr !important; }
+    .form-grid > [style*="grid-column"] { grid-column: 1 !important; }
+    /* Avatar card jadi horizontal di mobile */
+    .profil-avatar-card { display: flex !important; align-items: center !important; gap: 16px !important; text-align: left !important; }
+    .profil-avatar-card .avatar-img { margin: 0 !important; }
+    .profil-stat-grid { grid-template-columns: 1fr 1fr !important; }
+}
+</style>
+{% endblock %}

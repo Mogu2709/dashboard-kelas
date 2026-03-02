@@ -1,0 +1,540 @@
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.utils import timezone
+from django.http import JsonResponse
+from django.contrib.auth.models import User
+from django.core.paginator import Paginator
+from django.db.models import Prefetch
+
+from .models import Tugas, TugasSubmission, Materi, Notifikasi
+from .forms import TugasForm, TugasSubmissionForm, MateriForm
+from attendance.models import MataKuliah
+
+
+# ─── HELPER NOTIFIKASI ────────────────────────────────────────────────────────
+
+def _kirim_notif_semua(tipe, judul, pesan, url, exclude_user=None):
+    """
+    Kirim notifikasi ke semua user approved + superuser.
+    FIX: Kumpulkan semua user_id unik dulu sebelum bulk create,
+    sehingga superuser yang juga approved tidak dapat notif duplikat.
+    """
+    from accounts.models import UserProfile
+
+    target_user_ids = set()
+
+    # User approved (mahasiswa)
+    profiles = UserProfile.objects.filter(status='approved').values_list('user_id', flat=True)
+    target_user_ids.update(profiles)
+
+    # Superuser (untuk semua tipe, bukan hanya pengumuman)
+    superuser_ids = User.objects.filter(is_superuser=True).values_list('id', flat=True)
+    target_user_ids.update(superuser_ids)
+
+    # Exclude pengirim
+    if exclude_user:
+        target_user_ids.discard(exclude_user.id)
+
+    # Bulk create — jauh lebih efisien dari loop satu per satu
+    notif_list = [
+        Notifikasi(user_id=uid, tipe=tipe, judul=judul, pesan=pesan, url=url)
+        for uid in target_user_ids
+    ]
+    Notifikasi.objects.bulk_create(notif_list, ignore_conflicts=True)
+
+
+# ─── NOTIFIKASI API ───────────────────────────────────────────────────────────
+
+@login_required
+def notif_list_api(request):
+    # FIX BUG: Cleanup notif lama secara probabilistik (1/20 chance),
+    # bukan setiap request — menghemat query DB 95% dari waktu
+    import random
+    if random.randint(1, 20) == 1:
+        cutoff = timezone.now() - timezone.timedelta(days=30)
+        Notifikasi.objects.filter(user=request.user, dibaca=True, dibuat_pada__lt=cutoff).delete()
+
+    notifs = Notifikasi.objects.filter(user=request.user).order_by('-dibuat_pada')[:20]
+    unread_count = Notifikasi.objects.filter(user=request.user, dibaca=False).count()
+    data = [
+        {
+            'id': n.id,
+            'tipe': n.tipe,
+            'icon': n.icon,
+            'judul': n.judul,
+            'pesan': n.pesan,
+            'url': n.url,
+            'dibaca': n.dibaca,
+            'waktu': n.waktu_relatif,
+        }
+        for n in notifs
+    ]
+    return JsonResponse({'notifikasi': data, 'unread': unread_count})
+
+
+@login_required
+def notif_baca(request, pk):
+    if request.method == 'POST':
+        notif = get_object_or_404(Notifikasi, pk=pk, user=request.user)
+        notif.dibaca = True
+        notif.save()
+        return JsonResponse({'ok': True})
+    return JsonResponse({'error': 'method not allowed'}, status=405)
+
+
+@login_required
+def notif_baca_semua(request):
+    if request.method == 'POST':
+        Notifikasi.objects.filter(user=request.user, dibaca=False).update(dibaca=True)
+        return JsonResponse({'ok': True})
+    return JsonResponse({'error': 'method not allowed'}, status=405)
+
+
+# ─── TUGAS ────────────────────────────────────────────────────────────────────
+
+@login_required
+def tugas_list(request):
+    mk_filter = request.GET.get('mk')
+    status_filter = request.GET.get('status')
+    now = timezone.now()
+
+    # FIX N+1: prefetch submissions sekaligus, bukan query per iterasi
+    tugas_qs = (
+        Tugas.objects
+        .select_related('mata_kuliah', 'dibuat_oleh')
+        .prefetch_related(
+            Prefetch(
+                'submissions',
+                queryset=TugasSubmission.objects.select_related('user'),
+            )
+        )
+    )
+
+    if mk_filter:
+        tugas_qs = tugas_qs.filter(mata_kuliah_id=mk_filter)
+    if status_filter == 'aktif':
+        tugas_qs = tugas_qs.filter(deadline__gt=now)
+    elif status_filter == 'selesai':
+        tugas_qs = tugas_qs.filter(deadline__lte=now)
+
+    tugas_list_data = []
+    for tugas in tugas_qs:
+        # Ambil dari prefetch cache, tidak ada query tambahan
+        all_subs = list(tugas.submissions.all())
+        submission = None
+        submit_count = len(all_subs)
+
+        if not request.user.is_superuser:
+            for s in all_subs:
+                if s.user_id == request.user.id:
+                    submission = s
+                    break
+
+        tugas_list_data.append({
+            'tugas': tugas,
+            'submission': submission,
+            'submit_count': submit_count if request.user.is_superuser else 0,
+        })
+
+    return render(request, 'tugas_list.html', {
+        'tugas_list': tugas_list_data,
+        'mata_kuliah_list': MataKuliah.objects.all(),
+        'mk_filter': mk_filter,
+        'status_filter': status_filter,
+    })
+
+
+@login_required
+def detail_tugas(request, pk):
+    tugas = get_object_or_404(Tugas, pk=pk)
+    submission = None
+    form = None
+    submissions = None
+
+    if request.user.is_superuser:
+        submissions = (
+            TugasSubmission.objects
+            .filter(tugas=tugas)
+            .select_related('user', 'user__profile')
+            .order_by('-dikumpulkan_pada')
+        )
+    else:
+        try:
+            submission = TugasSubmission.objects.get(tugas=tugas, user=request.user)
+        except TugasSubmission.DoesNotExist:
+            pass
+
+        if request.method == 'POST':
+            if tugas.is_expired and not submission:
+                messages.error(request, 'Deadline sudah lewat.')
+                return redirect('detail_tugas', pk=pk)
+            # Block edit jika submission sudah dinilai
+            if submission and submission.nilai is not None:
+                messages.error(request, '🔒 Submission sudah dinilai dan tidak dapat diubah.')
+                return redirect('detail_tugas', pk=pk)
+            form = (
+                TugasSubmissionForm(request.POST, request.FILES, instance=submission)
+                if submission
+                else TugasSubmissionForm(request.POST, request.FILES)
+            )
+            if form.is_valid():
+                sub = form.save(commit=False)
+                sub.tugas = tugas
+                sub.user = request.user
+                sub.nama_file = ''
+                sub.ukuran = 0
+                sub.save()
+                action = 'diperbarui' if submission else 'dikumpulkan'
+                messages.success(request, f'✅ Tugas berhasil {action}!')
+                return redirect('detail_tugas', pk=pk)
+        else:
+            form = TugasSubmissionForm(instance=submission) if submission else TugasSubmissionForm()
+
+    return render(request, 'detail_tugas.html', {
+        'tugas': tugas,
+        'submission': submission,
+        'form': form,
+        'submissions': submissions,
+    })
+
+
+@login_required
+def buat_tugas(request):
+    if not request.user.is_superuser:
+        return redirect('tugas_list')
+    if request.method == 'POST':
+        form = TugasForm(request.POST, request.FILES)
+        if form.is_valid():
+            tugas = form.save(commit=False)
+            tugas.dibuat_oleh = request.user
+            # FIX BUG: validasi deadline tidak di masa lampau
+            if tugas.deadline <= timezone.now():
+                messages.error(request, '⚠️ Deadline tidak boleh di masa lalu.')
+                return render(request, 'buat_tugas.html', {'form': form, 'mode': 'buat'})
+            tugas.nama_file_soal = ''
+            tugas.save()
+            _kirim_notif_semua(
+                tipe='tugas_baru',
+                judul=f'Tugas Baru: {tugas.judul}',
+                pesan=f'{tugas.mata_kuliah.nama} · Deadline {tugas.deadline.strftime("%d %b %Y, %H:%M")}',
+                url=f'/tugas/{tugas.pk}/',
+                exclude_user=request.user,
+            )
+            # FITUR: Jika deadline < 24 jam, langsung kirim reminder deadline juga
+            sisa_jam = (tugas.deadline - timezone.now()).total_seconds() / 3600
+            if 0 < sisa_jam <= 24:
+                _kirim_notif_semua(
+                    tipe='deadline',
+                    judul=f'⏰ Deadline {tugas.judul}',
+                    pesan=f'{tugas.mata_kuliah.nama} — sisa {tugas.sisa_waktu}',
+                    url=f'/tugas/{tugas.pk}/',
+                    exclude_user=request.user,
+                )
+            messages.success(request, f'✅ Tugas "{tugas.judul}" berhasil dibuat!')
+            return redirect('detail_tugas', pk=tugas.pk)
+    else:
+        form = TugasForm()
+    return render(request, 'buat_tugas.html', {'form': form, 'mode': 'buat'})
+
+
+@login_required
+def edit_tugas(request, pk):
+    if not request.user.is_superuser:
+        return redirect('tugas_list')
+    tugas = get_object_or_404(Tugas, pk=pk)
+    if request.method == 'POST':
+        form = TugasForm(request.POST, request.FILES, instance=tugas)
+        if form.is_valid():
+            t = form.save(commit=False)
+            t.diedit_pada = timezone.now()
+            t.save()
+            messages.success(request, f'✅ Tugas "{t.judul}" berhasil diperbarui!')
+            return redirect('detail_tugas', pk=pk)
+    else:
+        form = TugasForm(instance=tugas)
+    return render(request, 'buat_tugas.html', {'form': form, 'mode': 'edit', 'tugas': tugas})
+
+
+@login_required
+def hapus_tugas(request, pk):
+    if not request.user.is_superuser:
+        return redirect('tugas_list')
+    tugas = get_object_or_404(Tugas, pk=pk)
+    if request.method == 'POST':
+        nama = tugas.judul
+        # Hapus notifikasi yang mengarah ke tugas ini
+        Notifikasi.objects.filter(url=f'/tugas/{pk}/').delete()
+        tugas.delete()
+        messages.success(request, f'🗑️ Tugas "{nama}" berhasil dihapus.')
+        return redirect('tugas_list')
+    return render(request, 'konfirmasi_hapus.html', {'obj': tugas, 'tipe': 'tugas'})
+
+
+@login_required
+def hapus_submission(request, pk):
+    submission = get_object_or_404(TugasSubmission, pk=pk)
+    if submission.user != request.user and not request.user.is_superuser:
+        return redirect('tugas_list')
+    # Block hapus jika sudah dinilai
+    if submission.nilai is not None and not request.user.is_superuser:
+        messages.error(request, '🔒 Submission sudah dinilai dan tidak dapat dihapus.')
+        return redirect('detail_tugas', pk=submission.tugas.pk)
+    tugas_pk = submission.tugas.pk
+    submission.delete()
+    messages.success(request, '🗑️ Submission berhasil dihapus.')
+    return redirect('detail_tugas', pk=tugas_pk)
+
+
+# ─── FITUR BARU: GRADING / NILAI ─────────────────────────────────────────────
+
+@login_required
+def beri_nilai(request, pk):
+    """Admin memberi nilai dan feedback ke satu submission."""
+    if not request.user.is_superuser:
+        return redirect('tugas_list')
+
+    submission = get_object_or_404(TugasSubmission, pk=pk)
+
+    if request.method == 'POST':
+        nilai_str = request.POST.get('nilai', '').strip()
+        feedback = request.POST.get('feedback', '').strip()
+
+        try:
+            nilai = float(nilai_str)
+            if not (0 <= nilai <= 100):
+                raise ValueError
+        except (ValueError, TypeError):
+            messages.error(request, 'Nilai harus berupa angka antara 0–100.')
+            return redirect('detail_tugas', pk=submission.tugas.pk)
+
+        submission.nilai = nilai
+        submission.feedback = feedback
+        submission.dinilai_pada = timezone.now()
+        submission.dinilai_oleh = request.user
+        submission.save(update_fields=['nilai', 'feedback', 'dinilai_pada', 'dinilai_oleh'])
+
+        # Kirim notifikasi ke mahasiswa
+        Notifikasi.objects.create(
+            user=submission.user,
+            tipe='tugas_baru',
+            judul=f'Tugas Dinilai: {submission.tugas.judul}',
+            pesan=f'Nilai kamu: {nilai} ({submission.grade_label})',
+            url=f'/tugas/{submission.tugas.pk}/',
+        )
+
+        messages.success(request, f'✅ Nilai untuk {submission.user.username} berhasil disimpan.')
+        return redirect('detail_tugas', pk=submission.tugas.pk)
+
+    # GET - tampilkan form nilai
+    return render(request, 'beri_nilai.html', {'submission': submission})
+
+
+# ─── MATERI ───────────────────────────────────────────────────────────────────
+
+@login_required
+def materi_list(request):
+    materi_qs = Materi.objects.select_related('mata_kuliah', 'diunggah_oleh').all()
+    mk_filter = request.GET.get('mk')
+    if mk_filter:
+        materi_qs = materi_qs.filter(mata_kuliah_id=mk_filter)
+    return render(request, 'materi_list.html', {
+        'materi_list': materi_qs,
+        'mata_kuliah_list': MataKuliah.objects.all(),
+        'mk_filter': mk_filter,
+    })
+
+
+@login_required
+def unggah_materi(request):
+    if not request.user.is_superuser:
+        return redirect('materi_list')
+    if request.method == 'POST':
+        form = MateriForm(request.POST, request.FILES)
+        if form.is_valid():
+            materi = form.save(commit=False)
+            materi.diunggah_oleh = request.user
+            materi.save()
+            _kirim_notif_semua(
+                tipe='materi_baru',
+                judul=f'Materi Baru: {materi.judul}',
+                pesan=f'{materi.mata_kuliah.nama}',
+                url='/tugas/materi/',
+                exclude_user=request.user,
+            )
+            messages.success(request, f'✅ Materi "{materi.judul}" berhasil diunggah!')
+            return redirect('materi_list')
+    else:
+        form = MateriForm()
+    return render(request, 'unggah_materi.html', {'form': form, 'mode': 'buat'})
+
+
+@login_required
+def edit_materi(request, pk):
+    if not request.user.is_superuser:
+        return redirect('materi_list')
+    materi = get_object_or_404(Materi, pk=pk)
+    if request.method == 'POST':
+        form = MateriForm(request.POST, request.FILES, instance=materi)
+        if form.is_valid():
+            m = form.save(commit=False)
+            m.diedit_pada = timezone.now()
+            m.save()
+            messages.success(request, f'✅ Materi "{m.judul}" berhasil diperbarui!')
+            return redirect('materi_list')
+    else:
+        form = MateriForm(instance=materi)
+    return render(request, 'unggah_materi.html', {'form': form, 'mode': 'edit', 'materi': materi})
+
+
+@login_required
+def hapus_materi(request, pk):
+    if not request.user.is_superuser:
+        return redirect('materi_list')
+    materi = get_object_or_404(Materi, pk=pk)
+    if request.method == 'POST':
+        nama = materi.judul
+        materi.delete()
+        messages.success(request, f'🗑️ Materi "{nama}" berhasil dihapus.')
+        return redirect('materi_list')
+    return render(request, 'konfirmasi_hapus.html', {'obj': materi, 'tipe': 'materi'})
+
+# ─── SEARCH ───────────────────────────────────────────────────────────────────
+
+@login_required
+def search(request):
+    q = request.GET.get('q', '').strip()
+    results = {'tugas': [], 'materi': [], 'query': q}
+
+    if len(q) >= 2:
+        from django.db.models import Q as Qfilter
+        now = timezone.now()
+
+        tugas_qs = (
+            Tugas.objects
+            .filter(Qfilter(judul__icontains=q) | Qfilter(deskripsi__icontains=q))
+            .select_related('mata_kuliah')
+            .order_by('deadline')[:8]
+        )
+        for t in tugas_qs:
+            results['tugas'].append({
+                'id': t.pk,
+                'judul': t.judul,
+                'mk': t.mata_kuliah.nama,
+                'deadline': t.deadline.strftime('%d %b %Y'),
+                'expired': t.is_expired,
+                'url': f'/tugas/{t.pk}/',
+            })
+
+        materi_qs = (
+            Materi.objects
+            .filter(Qfilter(judul__icontains=q) | Qfilter(deskripsi__icontains=q))
+            .select_related('mata_kuliah')
+            .order_by('-diunggah_pada')[:8]
+        )
+        for m in materi_qs:
+            results['materi'].append({
+                'id': m.pk,
+                'judul': m.judul,
+                'mk': m.mata_kuliah.nama,
+                'ekstensi': m.ekstensi or '',
+                'url': m.file.url if m.file else '',
+            })
+
+    return JsonResponse(results)
+
+
+# ─── HALAMAN GRAFIK & KALENDER ───────────────────────────────────────────────
+
+@login_required
+def grafik_kalender_page(request):
+    return render(request, 'grafik_kalender.html')
+
+
+# ─── GRAFIK KEHADIRAN ─────────────────────────────────────────────────────────
+
+@login_required
+def grafik_kehadiran(request):
+    """API: data kehadiran per minggu untuk grafik."""
+    from attendance.models import Pertemuan, Attendance
+    from django.db.models import Count
+    from django.db.models.functions import TruncWeek
+
+    if request.user.is_superuser:
+        # Superuser: rata-rata kehadiran kelas per minggu
+        total_mahasiswa = User.objects.filter(
+            is_superuser=False, profile__status='approved'
+        ).count()
+
+        data = (
+            Attendance.objects
+            .annotate(minggu=TruncWeek('waktu_hadir'))
+            .values('minggu')
+            .annotate(hadir=Count('id'))
+            .order_by('minggu')
+        )
+        result = []
+        for row in data:
+            persen = round((row['hadir'] / total_mahasiswa) * 100) if total_mahasiswa > 0 else 0
+            result.append({
+                'minggu': row['minggu'].strftime('%d %b'),
+                'hadir': row['hadir'],
+                'persen': min(persen, 100),
+            })
+    else:
+        # Mahasiswa: kehadiran diri sendiri — per pertemuan (max 20 terakhir)
+        pertemuan_qs = (
+            Pertemuan.objects
+            .select_related('mata_kuliah')
+            .order_by('tanggal')
+        )
+        hadir_ids = set(
+            Attendance.objects.filter(user=request.user)
+            .values_list('pertemuan_id', flat=True)
+        )
+        result = []
+        hadir_count = 0
+        for i, pt in enumerate(pertemuan_qs, 1):
+            hadir_count += 1 if pt.id in hadir_ids else 0
+            result.append({
+                'label': f'P{i}',
+                'mk': pt.mata_kuliah.nama,
+                'hadir': 1 if pt.id in hadir_ids else 0,
+                'kumulatif': round((hadir_count / i) * 100, 1),
+            })
+
+    return JsonResponse({'data': result})
+
+
+# ─── KALENDER DEADLINE ────────────────────────────────────────────────────────
+
+@login_required
+def kalender_data(request):
+    """API: semua deadline tugas untuk kalender."""
+    from django.db.models import Q as Qf
+    now = timezone.now()
+
+    tugas_qs = Tugas.objects.select_related('mata_kuliah').order_by('deadline')
+
+    # FIX N+1: ambil semua submission user sekaligus, bukan per tugas
+    if not request.user.is_superuser:
+        submitted_ids = set(
+            TugasSubmission.objects.filter(user=request.user)
+            .values_list('tugas_id', flat=True)
+        )
+    else:
+        submitted_ids = set()
+
+    events = []
+    for t in tugas_qs:
+        events.append({
+            'id': t.pk,
+            'title': t.judul,
+            'mk': t.mata_kuliah.nama,
+            'deadline': t.deadline.strftime('%Y-%m-%dT%H:%M'),
+            'expired': t.is_expired,
+            'submitted': t.pk in submitted_ids,
+            'url': f'/tugas/{t.pk}/',
+        })
+
+    return JsonResponse({'events': events, 'now': now.strftime('%Y-%m-%dT%H:%M')})

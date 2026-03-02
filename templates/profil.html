@@ -10,16 +10,6 @@
 
 <div class="page-content">
 
-    {% if messages %}
-    {% for message in messages %}
-    <div class="fade" style="margin-bottom:16px;padding:11px 15px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;
-        {% if message.tags == 'success' %}background:#f0fdf4;border:1px solid #c3e9d2;color:#166534;
-        {% else %}background:#fef2f2;border:1px solid #fecaca;color:#991b1b;{% endif %}">
-        {% if message.tags == 'success' %}✓{% else %}⚠{% endif %} {{ message }}
-    </div>
-    {% endfor %}
-    {% endif %}
-
     <div style="display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;" class="profil-grid">
 
         <!-- Kartu Identitas -->

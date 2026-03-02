@@ -48,9 +48,12 @@ def _kirim_notif_semua(tipe, judul, pesan, url, exclude_user=None):
 
 @login_required
 def notif_list_api(request):
-    # FIX: Auto-cleanup notif lama (sudah dibaca & lebih dari 30 hari)
-    cutoff = timezone.now() - timezone.timedelta(days=30)
-    Notifikasi.objects.filter(user=request.user, dibaca=True, dibuat_pada__lt=cutoff).delete()
+    # FIX BUG: Cleanup notif lama secara probabilistik (1/20 chance),
+    # bukan setiap request — menghemat query DB 95% dari waktu
+    import random
+    if random.randint(1, 20) == 1:
+        cutoff = timezone.now() - timezone.timedelta(days=30)
+        Notifikasi.objects.filter(user=request.user, dibaca=True, dibuat_pada__lt=cutoff).delete()
 
     notifs = Notifikasi.objects.filter(user=request.user).order_by('-dibuat_pada')[:20]
     unread_count = Notifikasi.objects.filter(user=request.user, dibaca=False).count()
@@ -205,6 +208,10 @@ def buat_tugas(request):
         if form.is_valid():
             tugas = form.save(commit=False)
             tugas.dibuat_oleh = request.user
+            # FIX BUG: validasi deadline tidak di masa lampau
+            if tugas.deadline <= timezone.now():
+                messages.error(request, '⚠️ Deadline tidak boleh di masa lalu.')
+                return render(request, 'buat_tugas.html', {'form': form, 'mode': 'buat'})
             tugas.nama_file_soal = ''
             tugas.save()
             _kirim_notif_semua(
@@ -493,7 +500,7 @@ def grafik_kehadiran(request):
                 'label': f'P{i}',
                 'mk': pt.mata_kuliah.nama,
                 'hadir': 1 if pt.id in hadir_ids else 0,
-                'kumulatif': round((hadir_count / i) * 100, 1),
+                'kumulatif': min(round((hadir_count / i) * 100, 1), 100.0),
             })
 
     return JsonResponse({'data': result})

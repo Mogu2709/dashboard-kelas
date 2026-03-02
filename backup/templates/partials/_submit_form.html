@@ -1,0 +1,117 @@
+{% if submission %}
+<!-- Sudah submit -->
+<div style="text-align:center;padding:12px 0 16px;">
+    <div style="font-size:32px;margin-bottom:8px;">✅</div>
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">Sudah Dikumpulkan</div>
+    <div style="font-size:12px;color:var(--text-secondary);">{{ submission.dikumpulkan_pada|date:"d M Y, H:i" }}</div>
+    <div style="margin-top:8px;">
+        {% if submission.terlambat %}
+        <span class="chip chip-yellow">Terlambat</span>
+        {% else %}
+        <span class="chip chip-green">Tepat Waktu</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if submission.nilai is not None %}
+<div class="submit-nilai-box">
+    <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">Nilai Kamu</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:36px;font-weight:700;color:var(--text);font-family:'Lora',serif;">{{ submission.nilai }}</span>
+        <span style="font-size:20px;font-weight:700;padding:4px 12px;border-radius:7px;
+            {% if submission.grade_label == 'A' %}background:#dcfce7;color:#166534;
+            {% elif submission.grade_label == 'B' %}background:#dbeafe;color:#1e40af;
+            {% elif submission.grade_label == 'C' %}background:#fef9c3;color:#854d0e;
+            {% elif submission.grade_label == 'D' %}background:#ffedd5;color:#9a3412;
+            {% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+            {{ submission.grade_label }}
+        </span>
+    </div>
+    {% if submission.feedback %}
+    <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.5;padding:8px 10px;background:var(--bg);border-radius:7px;text-align:left;">
+        💬 {{ submission.feedback }}
+    </div>
+    {% endif %}
+    <div style="font-size:11px;color:var(--text-tertiary);margin-top:6px;">Dinilai {{ submission.dinilai_pada|date:"d M Y, H:i" }}</div>
+</div>
+{% else %}
+<div style="margin-bottom:16px;padding:10px 12px;border-radius:8px;background:var(--bg-secondary);text-align:center;">
+    <span style="font-size:12.5px;color:var(--text-tertiary);">⏳ Menunggu penilaian</span>
+</div>
+{% endif %}
+
+<div class="divider" style="margin-bottom:16px;"></div>
+<div style="margin-bottom:16px;">
+    <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;">File yang dikumpulkan:</div>
+    <a href="{{ submission.file_jawaban.url }}" target="_blank"
+        style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--border);border-radius:7px;text-decoration:none;color:var(--text);font-size:13px;transition:background 0.1s;"
+        onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+        <span>📄</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ submission.nama_file }}</span>
+        <span style="font-size:11px;color:var(--text-tertiary);white-space:nowrap;">{{ submission.ukuran_display }}</span>
+    </a>
+</div>
+{% if submission.catatan %}
+<div style="font-size:12.5px;color:var(--text-secondary);background:var(--bg-secondary);padding:8px 10px;border-radius:6px;margin-bottom:16px;">
+    💬 {{ submission.catatan }}
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Form / Locked -->
+{% if submission.nilai is not None %}
+<div style="text-align:center;padding:12px 0 4px;">
+    <div style="font-size:12.5px;color:var(--text-tertiary);">🔒 Submission sudah dinilai dan tidak dapat diubah.</div>
+</div>
+
+{% else %}
+{% if not tugas.is_expired or submission %}
+<h3 style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;">
+    {% if submission %}🔄 Ganti File Jawaban{% else %}📤 Kumpulkan Tugas{% endif %}
+</h3>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div style="margin-bottom:14px;">
+        <label style="font-size:12.5px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px;">File Jawaban *</label>
+        <div id="drop-zone" onclick="document.getElementById('id_file_jawaban').click()"
+            style="border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--bg-secondary);"
+            onmouseover="this.style.borderColor='var(--border-hover)';this.style.background='var(--bg-tertiary)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg-secondary)'">
+            <div style="font-size:24px;margin-bottom:6px;">📁</div>
+            <div id="drop-label" style="font-size:12.5px;color:var(--text-secondary);">Klik atau drag file ke sini</div>
+            <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">PDF, Word, Excel, ZIP — maks. 20MB</div>
+            <input type="file" id="id_file_jawaban" name="file_jawaban" style="display:none;"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip,.rar"
+                onchange="updateFileLabel(this)">
+        </div>
+        {% if form.file_jawaban.errors %}
+        <div style="color:#b91c1c;font-size:12px;margin-top:4px;">{{ form.file_jawaban.errors.0 }}</div>
+        {% endif %}
+    </div>
+    <div style="margin-bottom:16px;">
+        <label style="font-size:12.5px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px;">Catatan (opsional)</label>
+        <textarea name="catatan" rows="2" placeholder="Catatan tambahan..."
+            style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:'Geist',sans-serif;resize:vertical;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='var(--border-hover)'" onblur="this.style.borderColor='var(--border)'">{% if submission %}{{ submission.catatan }}{% endif %}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+        {% if submission %}🔄 Perbarui Jawaban{% else %}📤 Kumpulkan Tugas{% endif %}
+    </button>
+</form>
+{% elif tugas.is_expired and not submission %}
+<div style="text-align:center;padding:24px 0;">
+    <div style="font-size:32px;margin-bottom:8px;">⏰</div>
+    <div style="font-size:13px;color:var(--text-secondary);">Deadline sudah lewat.<br>Kamu belum mengumpulkan tugas ini.</div>
+</div>
+{% endif %}
+
+{% if submission %}
+<div class="divider" style="margin:16px 0;"></div>
+<form method="post" action="{% url 'hapus_submission' submission.pk %}" onsubmit="return confirm('Tarik ulang submission? File jawabanmu akan dihapus.')">
+    {% csrf_token %}
+    <button type="submit" style="width:100%;padding:7px;border-radius:7px;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;font-size:12.5px;cursor:pointer;font-family:'Geist',sans-serif;">
+        🗑️ Tarik Ulang Submission
+    </button>
+</form>
+{% endif %}
+{% endif %}

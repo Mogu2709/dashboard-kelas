@@ -69,23 +69,32 @@
 <h3 style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;">
     {% if submission %}🔄 Ganti File Jawaban{% else %}📤 Kumpulkan Tugas{% endif %}
 </h3>
+
+{% if form.non_field_errors %}
+<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;color:#b91c1c;">
+    {{ form.non_field_errors }}
+</div>
+{% endif %}
+
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <div style="margin-bottom:14px;">
         <label style="font-size:12.5px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px;">File Jawaban *</label>
-        <div id="drop-zone" onclick="document.getElementById('id_file_jawaban').click()"
-            style="border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--bg-secondary);"
+        <div class="drop-zone-area" onclick="this.querySelector('.file-input-hidden').click()"
+            style="border:2px dashed {% if form.file_jawaban.errors %}#fca5a5{% else %}var(--border){% endif %};border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--bg-secondary);"
             onmouseover="this.style.borderColor='var(--border-hover)';this.style.background='var(--bg-tertiary)'"
             onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg-secondary)'">
             <div style="font-size:24px;margin-bottom:6px;">📁</div>
-            <div id="drop-label" style="font-size:12.5px;color:var(--text-secondary);">Klik atau drag file ke sini</div>
+            <div class="drop-label" style="font-size:12.5px;color:var(--text-secondary);">Klik atau drag file ke sini</div>
             <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">PDF, Word, Excel, ZIP — maks. 20MB</div>
-            <input type="file" id="id_file_jawaban" name="file_jawaban" style="display:none;"
+            <input type="file" class="file-input-hidden" name="file_jawaban" style="display:none;"
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip,.rar"
-                onchange="updateFileLabel(this)">
+                onchange="updateFileLabelLocal(this)">
         </div>
         {% if form.file_jawaban.errors %}
-        <div style="color:#b91c1c;font-size:12px;margin-top:4px;">{{ form.file_jawaban.errors.0 }}</div>
+        <div style="color:#b91c1c;font-size:12px;margin-top:6px;padding:6px 10px;background:#fef2f2;border-radius:6px;">
+            ⚠️ {{ form.file_jawaban.errors.0 }}
+        </div>
         {% endif %}
     </div>
     <div style="margin-bottom:16px;">
@@ -94,7 +103,8 @@
             style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:'Geist',sans-serif;resize:vertical;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;"
             onfocus="this.style.borderColor='var(--border-hover)'" onblur="this.style.borderColor='var(--border)'">{% if submission %}{{ submission.catatan }}{% endif %}</textarea>
     </div>
-    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;"
+        onclick="this.disabled=true;this.textContent='⏳ Mengirim...';this.closest('form').submit();">
         {% if submission %}🔄 Perbarui Jawaban{% else %}📤 Kumpulkan Tugas{% endif %}
     </button>
 </form>

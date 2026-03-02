@@ -11,7 +11,7 @@ from django.contrib import messages
 from .models import (
     Pertemuan, Attendance, MataKuliah,
     Pengumuman, PengumumanAttachment, PengumumanDibaca,
-    PengumumanLike, Komentar
+    PengumumanLike, Komentar, IzinAbsen
 )
 
 
@@ -68,7 +68,6 @@ def pertemuan_list(request):
     izin_status_map = {}
     izin_label_map = {}
     if not request.user.is_superuser:
-        from .models import IzinAbsen
         STATUS_LABEL = {'pending': '⏳ Menunggu', 'approved': '✓ Izin Disetujui', 'rejected': '✗ Ditolak'}
         STATUS_CHIP  = {'pending': 'yellow', 'approved': 'green', 'rejected': 'red'}
         for izin in IzinAbsen.objects.filter(user=request.user).values('pertemuan_id', 'status'):
@@ -82,7 +81,6 @@ def pertemuan_list(request):
     # Admin: pending izin count untuk alert
     pending_izin = 0
     if request.user.is_superuser:
-        from .models import IzinAbsen
         pending_izin = IzinAbsen.objects.filter(status='pending').count()
 
     return render(request, 'pertemuan_list.html', {
@@ -122,7 +120,6 @@ def absen_kode(request, pertemuan_id):
         return redirect('pertemuan_list')
 
     # FIX BUG: Izin sudah disetujui → tidak boleh hadir
-    from .models import IzinAbsen
     if IzinAbsen.objects.filter(user=request.user, pertemuan=pertemuan, status='approved').exists():
         messages.error(request, '⚠️ Kamu sudah tercatat izin/sakit di pertemuan ini.')
         return redirect('pertemuan_list')
@@ -145,6 +142,18 @@ def absen_kode(request, pertemuan_id):
         else:
             # Kode benar — catat kehadiran
             Attendance.objects.get_or_create(user=request.user, pertemuan=pertemuan)
+            # Kirim notif konfirmasi ke mahasiswa
+            try:
+                from tasks.models import Notifikasi
+                Notifikasi.objects.create(
+                    user=request.user,
+                    tipe='absensi',
+                    judul=f'✅ Absensi Tercatat',
+                    pesan=f'{pertemuan.judul} · {pertemuan.mata_kuliah.nama}',
+                    url='/absensi/',
+                )
+            except Exception:
+                pass
             return render(request, 'absen_kode.html', {
                 'pertemuan': pertemuan,
                 'sukses': True,
@@ -203,6 +212,13 @@ def buat_pertemuan(request):
             if batas_absen:
                 if tz.is_naive(batas_absen):
                     batas_absen = tz.make_aware(batas_absen)
+                # FIX BUG: batas_absen harus setelah waktu_mulai
+                if batas_absen <= waktu_mulai:
+                    messages.error(request, '⚠️ Batas absen harus setelah waktu mulai.')
+                    return render(request, 'buat_pertemuan.html', {
+                        'form': form,
+                        'mata_kuliah_list': MataKuliah.objects.all().order_by('semester', 'nama'),
+                    })
                 p.batas_absen = batas_absen
             else:
                 # Auto: 2 jam setelah waktu_mulai (model.save() juga handle ini,
@@ -210,6 +226,18 @@ def buat_pertemuan(request):
                 from datetime import timedelta
                 p.batas_absen = waktu_mulai + timedelta(hours=2)
             p.save()
+            # Kirim notifikasi ke semua mahasiswa
+            try:
+                from tasks.views import _kirim_notif_semua
+                _kirim_notif_semua(
+                    tipe='absensi',
+                    judul=f'📋 Pertemuan Baru: {p.judul}',
+                    pesan=f'{p.mata_kuliah.nama} · {p.tanggal.strftime("%d %b %Y")} · Kode: {p.kode_absen}',
+                    url='/absensi/',
+                    exclude_user=request.user,
+                )
+            except Exception:
+                pass
             return redirect('pertemuan_list')
     else:
         # Default waktu_mulai = sekarang (format datetime-local)
@@ -243,7 +271,6 @@ def rekap_mahasiswa(request):
     pertemuan_ids = list(pertemuan_qs.values_list('id', flat=True))
 
     # FIX: Hanya hitung kehadiran di pertemuan yang terfilter
-    from .models import IzinAbsen
     mahasiswa = User.objects.filter(is_superuser=False, profile__status='approved').annotate(
         total_hadir=Count(
             'attendance',
@@ -274,8 +301,8 @@ def rekap_mahasiswa(request):
         tot_alpha  = izin_data['alpha']
         # Efektif hadir = hadir + izin + sakit (alpha tidak dihitung)
         efektif    = tot_hadir + tot_izin + tot_sakit
-        persen     = round((efektif / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
-        persen_murni = round((tot_hadir / total_pertemuan) * 100, 1) if total_pertemuan > 0 else 0
+        persen     = min(round((efektif / total_pertemuan) * 100, 1), 100.0) if total_pertemuan > 0 else 0
+        persen_murni = min(round((tot_hadir / total_pertemuan) * 100, 1), 100.0) if total_pertemuan > 0 else 0
         data_rekap.append({
             'user_id': mhs.id,
             'username': mhs.username,
@@ -603,7 +630,6 @@ def notif_count(request):
 @login_required
 def ajukan_izin(request, pertemuan_id):
     """Mahasiswa mengajukan izin/sakit untuk pertemuan tertentu."""
-    from .models import IzinAbsen
     pertemuan = get_object_or_404(Pertemuan, id=pertemuan_id)
 
     # Tidak bisa izin kalau sudah hadir
@@ -616,6 +642,10 @@ def ajukan_izin(request, pertemuan_id):
 
     if request.method == 'POST':
         jenis      = request.POST.get('jenis', 'izin')
+        # FIX BUG: validasi jenis hanya boleh dari choices yang valid
+        valid_jenis = [c[0] for c in IzinAbsen.JENIS_CHOICES]
+        if jenis not in valid_jenis:
+            jenis = 'izin'
         keterangan = request.POST.get('keterangan', '').strip()
         bukti      = request.FILES.get('bukti')
 
@@ -653,7 +683,6 @@ def ajukan_izin(request, pertemuan_id):
 
         return redirect('pertemuan_list')
 
-    from .models import IzinAbsen
     return render(request, 'ajukan_izin.html', {
         'pertemuan': pertemuan,
         'existing': existing,
@@ -666,7 +695,6 @@ def daftar_izin(request):
     """Admin: lihat semua pengajuan izin."""
     if not request.user.is_superuser:
         return redirect('pertemuan_list')
-    from .models import IzinAbsen
 
     status_filter = request.GET.get('status', 'pending')
     izin_qs = (
@@ -695,7 +723,6 @@ def proses_izin(request, izin_id):
     """Admin: approve atau reject pengajuan izin."""
     if not request.user.is_superuser:
         return redirect('pertemuan_list')
-    from .models import IzinAbsen
 
     izin   = get_object_or_404(IzinAbsen, id=izin_id)
     action = request.POST.get('action')  # 'approve' atau 'reject'
@@ -712,20 +739,19 @@ def proses_izin(request, izin_id):
         status_label = 'disetujui ✓' if action == 'approve' else 'ditolak ✗'
         Notifikasi.objects.create(
             user=izin.user,
-            tipe='pengumuman',
+            tipe='izin',
             judul=f'Izin {izin.get_jenis_display()} {status_label}',
             pesan=f'{izin.pertemuan.judul} · {izin.pertemuan.mata_kuliah.nama}',
             url='/absensi/',
         )
-        # Gunakan URL parameter bukan messages agar tidak bocor ke halaman lain
+        # FIX BUG: Whitelist URL yang diizinkan, cegah open redirect
+        ALLOWED_NEXT = {'daftar_izin', 'pertemuan_list', 'rekap_mahasiswa'}
         next_url = request.POST.get('next', 'daftar_izin')
+        if next_url not in ALLOWED_NEXT:
+            next_url = 'daftar_izin'
         status_msg = 'disetujui' if action == 'approve' else 'ditolak'
-        # Redirect ke daftar_izin dengan query param sebagai feedback
         from django.urls import reverse
-        try:
-            redirect_url = reverse(next_url)
-        except Exception:
-            redirect_url = next_url
+        redirect_url = reverse(next_url)
         return redirect(f'{redirect_url}?status_msg={status_msg}')
 
     return redirect(request.POST.get('next', 'daftar_izin'))
@@ -734,7 +760,6 @@ def proses_izin(request, izin_id):
 @login_required
 def izin_saya(request):
     """Mahasiswa: lihat riwayat pengajuan izin sendiri."""
-    from .models import IzinAbsen
     izin_list = (
         IzinAbsen.objects
         .filter(user=request.user)

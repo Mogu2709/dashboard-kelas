@@ -113,6 +113,8 @@
         .notif-icon.materi_baru { background: #eff6ff; }
         .notif-icon.deadline { background: #fef2f2; }
         .notif-icon.pengumuman { background: #f0fdf4; }
+        .notif-icon.absensi { background: #f0fdf4; }
+        .notif-icon.izin { background: #eff6ff; }
         .notif-content { flex: 1; min-width: 0; }
         .notif-judul { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
         .notif-pesan { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -457,6 +459,42 @@
 </div>
 
 <div class="main">
+    {% if messages %}
+    <div id="global-messages" style="position:fixed;top:56px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;max-width:360px;">
+        {% for message in messages %}
+        <div class="global-msg" style="
+            display:flex;align-items:flex-start;gap:10px;
+            padding:12px 14px;border-radius:9px;
+            font-size:13px;font-family:'Geist',sans-serif;
+            box-shadow:0 4px 12px rgba(0,0,0,0.1);
+            border:1px solid;
+            animation:msgIn 0.25s cubic-bezier(0.16,1,0.3,1) forwards;
+            {% if message.tags == 'error' %}
+                background:#fef2f2;border-color:#fecaca;color:#b91c1c;
+            {% elif message.tags == 'success' %}
+                background:#f0fdf4;border-color:#bbf7d0;color:#166534;
+            {% elif message.tags == 'warning' %}
+                background:#fffbeb;border-color:#fde68a;color:#92400e;
+            {% else %}
+                background:#eff6ff;border-color:#bfdbfe;color:#1e40af;
+            {% endif %}
+        ">
+            <span style="flex:1;">{{ message }}</span>
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:15px;opacity:0.5;padding:0;line-height:1;color:inherit;">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    <style>
+        @keyframes msgIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+    </style>
+    <script>
+        // Auto-dismiss setelah 4 detik
+        setTimeout(function(){
+            var msgs = document.getElementById('global-messages');
+            if(msgs) msgs.style.transition='opacity 0.4s', msgs.style.opacity='0', setTimeout(function(){msgs.remove()},400);
+        }, 4000);
+    </script>
+    {% endif %}
     {% block content %}{% endblock %}
 </div>
 

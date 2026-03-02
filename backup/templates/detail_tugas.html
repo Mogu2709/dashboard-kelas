@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block nav_tugas %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div style="margin-bottom:10px;">
+        <a href="{% url 'tugas_list' %}" style="font-size:13px;color:var(--text-secondary);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+            ← Kembali ke Tugas
+        </a>
+    </div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                <h1 class="page-title" style="font-size:22px;">{{ tugas.judul }}</h1>
+                {% if tugas.is_expired %}
+                    <span class="chip chip-gray">Selesai</span>
+                {% else %}
+                    <span class="chip chip-green">Aktif</span>
+                {% endif %}
+            </div>
+            <p class="page-subtitle">{{ tugas.mata_kuliah.nama }}</p>
+        </div>
+        {% if user.is_superuser %}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="{% url 'edit_tugas' tugas.pk %}" class="btn btn-secondary">✏️ Edit</a>
+            <form method="post" action="{% url 'hapus_tugas' tugas.pk %}" onsubmit="return confirm('Yakin hapus tugas ini? Semua submission akan terhapus juga.')">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;">🗑️ Hapus</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="page-content">
+
+    {% if messages %}
+    {% for message in messages %}
+    <div style="padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;
+        {% if message.tags == 'success' %}background:#eefaf4;border:1px solid #c3e9d2;color:#1a7f4b;
+        {% elif message.tags == 'error' %}background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
+        {% else %}background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="dt-grid" id="layout-grid">
+
+        <!-- LEFT: Info tugas -->
+        <div class="dt-left">
+
+            <!-- Detail Card -->
+            <div class="notion-card fade fade-1" style="padding:24px;margin-bottom:16px;">
+                <h3 style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;">Detail Tugas</h3>
+
+                <div class="detail-row">
+                    <span style="font-size:16px;margin-top:1px;">⏰</span>
+                    <div>
+                        <div style="font-size:11.5px;color:var(--text-tertiary);margin-bottom:2px;">Deadline</div>
+                        <div style="font-size:14px;font-weight:500;color:{% if tugas.is_expired %}var(--text-secondary){% else %}#b91c1c{% endif %};">
+                            {{ tugas.deadline|date:"l, d F Y — H:i" }} WIB
+                        </div>
+                        {% if not tugas.is_expired and tugas.sisa_waktu %}
+                        <div style="font-size:12px;color:#854d0e;margin-top:2px;">⌛ Sisa: {{ tugas.sisa_waktu }}</div>
+                        {% elif tugas.is_expired %}
+                        <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">Deadline sudah lewat</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <span style="font-size:16px;margin-top:1px;">👤</span>
+                    <div>
+                        <div style="font-size:11.5px;color:var(--text-tertiary);margin-bottom:2px;">Dibuat oleh</div>
+                        <div style="font-size:14px;">{{ tugas.dibuat_oleh.profile.display_name }}</div>
+                        <div style="font-size:12px;color:var(--text-tertiary);">{{ tugas.dibuat_pada|date:"d M Y, H:i" }}</div>
+                    </div>
+                </div>
+
+                {% if tugas.file_soal %}
+                <div class="detail-row" style="margin-bottom:0;">
+                    <span style="font-size:16px;margin-top:1px;">📎</span>
+                    <div>
+                        <div style="font-size:11.5px;color:var(--text-tertiary);margin-bottom:6px;">File Soal</div>
+                        <a href="{{ tugas.file_soal.url }}" target="_blank" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">
+                            ⬇️ {{ tugas.nama_file_soal|default:"Download Soal" }}
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if tugas.deskripsi %}
+            <div class="notion-card fade fade-2" style="padding:24px;margin-bottom:16px;">
+                <h3 style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">Instruksi / Deskripsi</h3>
+                <div style="font-size:14px;color:var(--text);line-height:1.7;white-space:pre-line;">{{ tugas.deskripsi }}</div>
+            </div>
+            {% endif %}
+
+            <!-- MAHASISWA MOBILE: Form submit muncul di sini di layar kecil -->
+            {% if not user.is_superuser %}
+            <div class="dt-form-mobile notion-card fade" style="padding:20px;margin-bottom:16px;display:none;">
+                {% include "partials/_submit_form.html" with tugas=tugas submission=submission form=form %}
+            </div>
+            {% endif %}
+
+            {% if user.is_superuser %}
+            <div class="notion-card fade fade-3" style="padding:24px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                    <h3 style="font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">
+                        Submission ({{ submissions.count }})
+                    </h3>
+                    {% if submissions %}
+                    <span style="font-size:12px;color:var(--text-tertiary);">
+                        {{ submissions.count }} dari mahasiswa
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if submissions %}
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    {% for sub in submissions %}
+                    <div style="padding:14px;border:1px solid var(--border);border-radius:8px;">
+                        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+                            <div style="width:32px;height:32px;border-radius:7px;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">
+                                {{ sub.user.profile.inisial }}
+                            </div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+                                    <span style="font-size:13px;font-weight:600;">{{ sub.user.profile.display_name }}</span>
+                                    <span style="font-size:11px;color:var(--text-tertiary);font-family:'IBM Plex Mono',monospace;">{{ sub.user.profile.nim }}</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                                    {% if sub.terlambat %}
+                                        <span class="chip chip-yellow" style="font-size:10.5px;">Terlambat</span>
+                                    {% else %}
+                                        <span class="chip chip-green" style="font-size:10.5px;">Tepat Waktu</span>
+                                    {% endif %}
+                                    <span style="font-size:11.5px;color:var(--text-tertiary);">{{ sub.dikumpulkan_pada|date:"d M Y, H:i" }}</span>
+                                </div>
+                                {% if sub.catatan %}
+                                <div style="font-size:12.5px;color:var(--text-secondary);background:var(--bg-secondary);padding:8px 10px;border-radius:6px;margin-bottom:8px;">
+                                    💬 {{ sub.catatan }}
+                                </div>
+                                {% endif %}
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <a href="{{ sub.file_jawaban.url }}" target="_blank" class="btn btn-secondary" style="font-size:11.5px;padding:4px 10px;">
+                                        ⬇️ {{ sub.nama_file|default:"Download" }} <span style="color:var(--text-tertiary);">({{ sub.ukuran_display }})</span>
+                                    </a>
+                                    <a href="{% url 'beri_nilai' sub.pk %}" class="btn btn-primary" style="font-size:11.5px;padding:4px 10px;">
+                                        ✏️ Beri Nilai
+                                    </a>
+                                </div>
+                                {% if sub.nilai is not None %}
+                                <div style="margin-top:10px;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-secondary);border-radius:7px;border:1px solid var(--border);flex-wrap:wrap;">
+                                    <span style="font-size:18px;font-weight:700;color:var(--text);">{{ sub.nilai }}</span>
+                                    <span style="font-size:13px;font-weight:600;padding:2px 8px;border-radius:5px;
+                                        {% if sub.grade_label == 'A' %}background:#dcfce7;color:#166534;
+                                        {% elif sub.grade_label == 'B' %}background:#dbeafe;color:#1e40af;
+                                        {% elif sub.grade_label == 'C' %}background:#fef9c3;color:#854d0e;
+                                        {% elif sub.grade_label == 'D' %}background:#ffedd5;color:#9a3412;
+                                        {% else %}background:#fee2e2;color:#991b1b;{% endif %}">
+                                        {{ sub.grade_label }}
+                                    </span>
+                                    {% if sub.feedback %}
+                                    <span style="font-size:12px;color:var(--text-secondary);flex:1;min-width:0;">💬 {{ sub.feedback }}</span>
+                                    {% endif %}
+                                    <span style="font-size:11px;color:var(--text-tertiary);white-space:nowrap;">{{ sub.dinilai_pada|date:"d M Y" }}</span>
+                                </div>
+                                {% else %}
+                                <div style="margin-top:6px;">
+                                    <span style="font-size:11.5px;color:var(--text-tertiary);font-style:italic;">Belum dinilai</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align:center;padding:32px;color:var(--text-secondary);font-size:13px;">
+                    <div style="font-size:32px;margin-bottom:8px;">📭</div>
+                    Belum ada yang mengumpulkan tugas ini.
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- RIGHT: Form Submit — hanya desktop, mahasiswa -->
+        {% if not user.is_superuser %}
+        <div class="dt-right">
+            <div class="notion-card fade fade-2 dt-sticky">
+                {% include "partials/_submit_form.html" with tugas=tugas submission=submission form=form %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+/* ── Layout Grid ── */
+.dt-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+.dt-left { min-width: 0; }
+.dt-right { min-width: 0; }
+.dt-sticky {
+    position: sticky;
+    top: calc(var(--topbar-h) + 16px);
+    padding: 20px;
+}
+/* Mobile: form muncul di kiri (dt-form-mobile), sidebar disembunyikan */
+/* dt-form-mobile hidden by default via inline style, shown on mobile via JS */
+
+@media (max-width: 860px) {
+    .dt-grid { grid-template-columns: 1fr; }
+    .dt-right { display: none; }
+    .dt-form-mobile { display: block !important; }
+    .dt-sticky { position: static; }
+}
+
+/* ── Detail rows ── */
+.detail-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    align-items: flex-start;
+}
+
+/* ── Submit form shared styles ── */
+.submit-nilai-box {
+    margin-bottom: 16px;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    text-align: center;
+}
+</style>
+
+<script>
+function updateFileLabel(input) {
+    const label = document.getElementById('drop-label');
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const size = file.size < 1024*1024 ? (file.size/1024).toFixed(1)+' KB' : (file.size/1024/1024).toFixed(1)+' MB';
+        label.innerHTML = `<strong style="color:var(--text);">📄 ${file.name}</strong><br><span style="font-size:11px;">${size}</span>`;
+    }
+}
+const dropZone = document.getElementById('drop-zone');
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor='var(--border-hover)'; dropZone.style.background='var(--bg-tertiary)'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor='var(--border)'; dropZone.style.background='var(--bg-secondary)'; });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('id_file_jawaban');
+        if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; updateFileLabel(input); }
+        dropZone.style.borderColor='var(--border)'; dropZone.style.background='var(--bg-secondary)';
+    });
+}
+</script>
+{% endblock %}

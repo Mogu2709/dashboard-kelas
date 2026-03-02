@@ -295,7 +295,7 @@
                         stroke-width="8"
                         stroke-linecap="round"
                         stroke-dasharray="{{ persentase|floatformat:0 }} {{ 100|add:0 }}"
-                        style="stroke-dasharray: calc({{ persentase }} * 2.262) 226.2;transition:stroke-dasharray 1.4s cubic-bezier(0.16,1,0.3,1);"
+                        style="stroke-dasharray: calc(min({{ persentase }}, 100) * 2.262) 226.2;transition:stroke-dasharray 1.4s cubic-bezier(0.16,1,0.3,1);"
                         class="progress-circle"/>
                     {# target line at 75% #}
                     <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="2"
@@ -323,7 +323,7 @@
                 {# Thin progress bar #}
                 <div style="position:relative;background:var(--bg-secondary);border-radius:100px;height:6px;overflow:visible;margin-bottom:6px;">
                     <div style="position:absolute;left:75%;top:-2px;bottom:-2px;width:2px;background:rgba(0,0,0,0.18);border-radius:1px;z-index:2;"></div>
-                    <div id="progressBar" style="height:100%;border-radius:100px;width:0%;transition:width 1.2s cubic-bezier(0.16,1,0.3,1);background:{% if persentase >= 75 %}linear-gradient(90deg,#22c55e,#1a7f4b){% elif persentase >= 50 %}linear-gradient(90deg,#f59e0b,#d97706){% else %}linear-gradient(90deg,#f87171,#dc2626){% endif %};"></div>
+                    <div id="progressBar" style="height:100%;border-radius:100px;width:0%;max-width:100%;transition:width 1.2s cubic-bezier(0.16,1,0.3,1);background:{% if persentase >= 75 %}linear-gradient(90deg,#22c55e,#1a7f4b){% elif persentase >= 50 %}linear-gradient(90deg,#f59e0b,#d97706){% else %}linear-gradient(90deg,#f87171,#dc2626){% endif %};"></div>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
                     {% if persentase >= 75 %}
@@ -484,7 +484,7 @@
 window.addEventListener('load', function() {
     setTimeout(function() {
         const bar = document.getElementById('progressBar');
-        if (bar) bar.style.width = '{{ persentase }}%';
+        if (bar) bar.style.width = Math.min({{ persentase }}, 100) + '%';
     }, 200);
 });
 </script>

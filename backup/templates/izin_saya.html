@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block nav_izin_saya %}active{% endblock %}
+
+{% block content %}
+<div class="page-header fade">
+    <div style="margin-bottom:10px;">
+        <a href="{% url 'pertemuan_list' %}" style="font-size:13px;color:var(--text-secondary);text-decoration:none;">← Kembali ke Absensi</a>
+    </div>
+    <span class="page-emoji">📋</span>
+    <h1 class="page-title">Izin Saya</h1>
+    <p class="page-subtitle">Riwayat pengajuan izin & sakit kamu</p>
+</div>
+
+<div class="page-content">
+    {% if izin_list %}
+    <div class="notion-card fade fade-1" style="overflow:hidden;">
+        {% for izin in izin_list %}
+        <div style="padding:14px 18px;border-bottom:1px solid #f7f7f5;transition:background 0.1s;"
+             onmouseover="this.style.background='#fafaf8'" onmouseout="this.style.background=''">
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+                <div style="width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;margin-top:1px;
+                    {% if izin.status == 'approved' %}background:#eefaf4;{% elif izin.status == 'rejected' %}background:#fef2f2;{% else %}background:#fefce8;{% endif %}">
+                    {{ izin.icon }}
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px;">
+                        <span style="font-size:13.5px;font-weight:500;color:var(--text);line-height:1.3;flex:1;min-width:0;">{{ izin.pertemuan.judul }}</span>
+                        <span style="font-size:11px;color:var(--text-tertiary);white-space:nowrap;flex-shrink:0;padding-top:2px;">{{ izin.dibuat_pada|date:"d M Y" }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:6px;">
+                        <span class="chip chip-{% if izin.status == 'approved' %}green{% elif izin.status == 'rejected' %}red{% else %}yellow{% endif %}" style="font-size:10.5px;">
+                            {% if izin.status == 'approved' %}✓ Disetujui{% elif izin.status == 'rejected' %}✗ Ditolak{% else %}⏳ Menunggu{% endif %}
+                        </span>
+                        <span style="font-size:10.5px;padding:2px 7px;border-radius:100px;
+                            {% if izin.jenis == 'sakit' %}background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;
+                            {% else %}background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;{% endif %}">
+                            {{ izin.get_jenis_display }}
+                        </span>
+                        <span style="font-size:11px;color:var(--text-tertiary);">{{ izin.pertemuan.mata_kuliah.nama }} · {{ izin.pertemuan.tanggal|date:"d M Y" }}</span>
+                    </div>
+                    <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.4;margin-bottom:{% if izin.catatan_admin or izin.status == 'pending' or izin.status == 'rejected' %}8px{% else %}0{% endif %};">{{ izin.keterangan|truncatechars:120 }}</div>
+                    {% if izin.catatan_admin %}
+                    <div style="font-size:12px;padding:7px 10px;border-radius:7px;margin-bottom:8px;
+                        {% if izin.status == 'approved' %}background:#eefaf4;color:#1a7f4b;{% else %}background:#fef2f2;color:#b91c1c;{% endif %}">
+                        💬 {{ izin.catatan_admin }}
+                    </div>
+                    {% endif %}
+                    {% if izin.status == 'pending' %}
+                    <a href="{% url 'ajukan_izin' izin.pertemuan.id %}" class="btn btn-secondary" style="font-size:11.5px;padding:4px 10px;">✏️ Edit Pengajuan</a>
+                    {% elif izin.status == 'rejected' %}
+                    <a href="{% url 'ajukan_izin' izin.pertemuan.id %}" class="btn btn-secondary" style="font-size:11.5px;padding:4px 10px;color:#1d4ed8;border-color:#bfdbfe;">🔄 Ajukan Ulang</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:64px 20px;" class="fade fade-1">
+        <div style="font-size:40px;margin-bottom:12px;">📋</div>
+        <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px;">Belum ada pengajuan izin</div>
+        <div style="font-size:13px;color:var(--text-secondary);">Pengajuan bisa dilakukan dari halaman absensi</div>
+        <a href="{% url 'pertemuan_list' %}" class="btn btn-secondary" style="margin-top:16px;display:inline-flex;">→ Ke Absensi</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
