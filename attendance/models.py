@@ -7,6 +7,21 @@ import os
 import random
 
 
+def _get_raw_storage():
+    """Return RawMediaCloudinaryStorage jika tersedia, else None (pakai default local)."""
+    try:
+        from cloudinary_storage.storage import RawMediaCloudinaryStorage
+        import cloudinary
+        if cloudinary.config().cloud_name:
+            return RawMediaCloudinaryStorage()
+    except Exception:
+        pass
+    return None
+
+# Dipanggil sekali saat startup
+_raw_storage = _get_raw_storage()
+
+
 def _generate_kode():
     """Generate kode absen 6 karakter, hindari karakter mirip (0/O, 1/I/L)."""
     chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
@@ -160,7 +175,7 @@ class PengumumanAttachment(models.Model):
         ('file',  'File'),
     ]
     pengumuman = models.ForeignKey(Pengumuman, on_delete=models.CASCADE, related_name='attachments')
-    file       = models.FileField(upload_to=pengumuman_upload_path)
+    file       = models.FileField(upload_to=pengumuman_upload_path, storage=_raw_storage)
     tipe       = models.CharField(max_length=10, choices=TIPE_CHOICES)
     nama_asli  = models.CharField(max_length=255, blank=True)
     ukuran     = models.PositiveBigIntegerField(default=0, help_text='Ukuran file dalam bytes')
@@ -247,7 +262,7 @@ class IzinAbsen(models.Model):
     pertemuan   = models.ForeignKey(Pertemuan, on_delete=models.CASCADE, related_name='izin_absen')
     jenis       = models.CharField(max_length=10, choices=JENIS_CHOICES)
     keterangan  = models.TextField(blank=True)
-    bukti       = models.FileField(upload_to=izin_upload_path, blank=True, null=True)
+    bukti       = models.FileField(upload_to=izin_upload_path, blank=True, null=True, storage=_raw_storage)
     status      = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     dibuat_pada = models.DateTimeField(auto_now_add=True)
     diproses_pada = models.DateTimeField(null=True, blank=True)
