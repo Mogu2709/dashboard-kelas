@@ -3,8 +3,14 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import HttpResponse
 
 from accounts.views import dashboard_view
+
+
+def trigger_error(request):
+    division_by_zero = 1 / 0
+
 
 # ── Custom error handlers ─────────────────────────────────────────────────────
 handler404 = 'config.views.error_404'
@@ -30,6 +36,7 @@ urlpatterns = [
     # ─── Fitur Utama ──────────────────────────────────────────────────────────
     path('absensi/', include('attendance.urls')),
     path('tugas/', include('tasks.urls')),
+    path("sentry-debug/", trigger_error),
 ]
 
 # Serve media files saat development

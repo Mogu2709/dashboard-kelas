@@ -1,9 +1,15 @@
-from pathlib import Path
 import os
 from decouple import config
 import dj_database_url
+import sentry_sdk
+
+from sentry_sdk.integrations.django import DjangoIntegration
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # ── Security ──────────────────────────────────────────────────────────────────
 SECRET_KEY = config('SECRET_KEY')
@@ -14,15 +20,16 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*').split(',')
 _csrf_origins = config('CSRF_TRUSTED_ORIGINS', default='')
 CSRF_TRUSTED_ORIGINS = [o for o in _csrf_origins.split(',') if o.strip()]
 
-# Production Security
-if not DEBUG:
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+
+SENTRY_DSN = config('https://e650d747316a6c84532736d627708915@o4510978877358080.ingest.us.sentry.io/4510978903113728', default=None)
+
+if SENTRY_DSN and not DEBUG:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.1,
+        send_default_pii=True,
+    )
 
 # ── Apps ──────────────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
