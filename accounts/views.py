@@ -198,6 +198,39 @@ def dashboard_view(request):
             for pt in pertemuan_terbaru_qs
         ]
 
+        # ── Jadwal hari ini & perubahan upcoming ──────────────────────────────
+        from jadwal.models import JadwalStatis, JadwalDinamis
+        from datetime import date, timedelta
+
+        _hari_ini = date.today()
+        _nama_hari_map = {
+            'monday': 'senin', 'tuesday': 'selasa', 'wednesday': 'rabu',
+            'thursday': 'kamis', 'friday': 'jumat', 'saturday': 'sabtu', 'sunday': 'minggu'
+        }
+        _hari_key = _nama_hari_map.get(_hari_ini.strftime('%A').lower(), '')
+        _semester_aktif = 2 if _hari_ini.month in [2, 3, 4, 5, 6, 7] else 1
+
+        jadwal_hari_ini_dash = JadwalStatis.objects.filter(
+            hari=_hari_key, semester=_semester_aktif, aktif=True
+        ).select_related('mata_kuliah').order_by('jam_mulai')
+
+        # Override hari ini
+        _override_hari_ini = {
+            o.jadwal_statis_id: o
+            for o in JadwalDinamis.objects.filter(tanggal_asli=_hari_ini)
+            if o.jadwal_statis_id
+        }
+        jadwal_hari_ini_display = [
+            {'jadwal': j, 'override': _override_hari_ini.get(j.pk)}
+            for j in jadwal_hari_ini_dash
+        ]
+
+        # Perubahan 7 hari ke depan
+        perubahan_upcoming = JadwalDinamis.objects.filter(
+            tanggal_asli__gte=_hari_ini,
+            tanggal_asli__lte=_hari_ini + timedelta(days=7),
+        ).select_related('mata_kuliah', 'jadwal_statis').order_by('tanggal_asli')[:5]
+
         context = {
             'is_ketua': True,
             'pending_users': pending_users,
@@ -221,6 +254,10 @@ def dashboard_view(request):
             'pertemuan_terbaru': pertemuan_terbaru_data,
             # Notif
             'notif_unread': notif_unread,
+            # Jadwal
+            'jadwal_hari_ini_display': jadwal_hari_ini_display,
+            'perubahan_upcoming': perubahan_upcoming,
+            'hari_ini_label': dict([('senin','Senin'),('selasa','Selasa'),('rabu','Rabu'),('kamis','Kamis'),('jumat','Jumat'),('sabtu','Sabtu')]).get(_hari_key, ''),
         }
 
     else:
@@ -280,6 +317,37 @@ def dashboard_view(request):
             user=request.user, nilai__isnull=False
         ).select_related('tugas', 'tugas__mata_kuliah').order_by('-dinilai_pada')[:3]
 
+        # ── Jadwal hari ini & perubahan upcoming (mahasiswa) ─────────────────
+        from jadwal.models import JadwalStatis, JadwalDinamis
+        from datetime import date, timedelta
+
+        _hari_ini = date.today()
+        _nama_hari_map = {
+            'monday': 'senin', 'tuesday': 'selasa', 'wednesday': 'rabu',
+            'thursday': 'kamis', 'friday': 'jumat', 'saturday': 'sabtu', 'sunday': 'minggu'
+        }
+        _hari_key = _nama_hari_map.get(_hari_ini.strftime('%A').lower(), '')
+        _semester_aktif = 2 if _hari_ini.month in [2, 3, 4, 5, 6, 7] else 1
+
+        jadwal_hari_ini_dash = JadwalStatis.objects.filter(
+            hari=_hari_key, semester=_semester_aktif, aktif=True
+        ).select_related('mata_kuliah').order_by('jam_mulai')
+
+        _override_hari_ini = {
+            o.jadwal_statis_id: o
+            for o in JadwalDinamis.objects.filter(tanggal_asli=_hari_ini)
+            if o.jadwal_statis_id
+        }
+        jadwal_hari_ini_display = [
+            {'jadwal': j, 'override': _override_hari_ini.get(j.pk)}
+            for j in jadwal_hari_ini_dash
+        ]
+
+        perubahan_upcoming = JadwalDinamis.objects.filter(
+            tanggal_asli__gte=_hari_ini,
+            tanggal_asli__lte=_hari_ini + timedelta(days=7),
+        ).select_related('mata_kuliah', 'jadwal_statis').order_by('tanggal_asli')[:5]
+
         context = {
             'is_ketua': False,
             'pending_users': [],
@@ -298,6 +366,10 @@ def dashboard_view(request):
             'pertemuan_terbaru': pertemuan_terbaru,
             'hadir_ids': hadir_ids,
             'izin_map_dashboard': izin_map_dashboard,
+            # Jadwal
+            'jadwal_hari_ini_display': jadwal_hari_ini_display,
+            'perubahan_upcoming': perubahan_upcoming,
+            'hari_ini_label': dict([('senin','Senin'),('selasa','Selasa'),('rabu','Rabu'),('kamis','Kamis'),('jumat','Jumat'),('sabtu','Sabtu')]).get(_hari_key, ''),
         }
 
     return render(request, 'dashboard.html', context)

@@ -121,10 +121,73 @@
         </div>
     </div>
 
-    {# ── GRID UTAMA: 2 kolom ──────────────────────────────────────────────── #}
-    <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;margin-bottom:20px;" class="dashboard-grid">
+    {# ── JADWAL HARI INI — full width ─────────────────────────────────────── #}
+    <div class="notion-card fade fade-2" style="overflow:hidden;margin-bottom:20px;">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div>
+                <div style="font-size:13.5px;font-weight:600;color:var(--text);">🗓️ Jadwal Hari Ini</div>
+                <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px;">{% if hari_ini_label %}{{ hari_ini_label }}{% else %}Hari ini{% endif %}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                {% if perubahan_upcoming %}
+                <span style="background:#fef9c3;color:#854d0e;font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;">⚡ {{ perubahan_upcoming|length }} perubahan</span>
+                {% endif %}
+                <a href="{% url 'jadwal' %}" class="btn btn-secondary" style="font-size:12px;padding:5px 14px;">Kelola Jadwal →</a>
+            </div>
+        </div>
+        {% if jadwal_hari_ini_display %}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));">
+            {% for item in jadwal_hari_ini_display %}
+            {% with j=item.jadwal ov=item.override %}
+            <div style="padding:14px 20px;border-right:1px solid #f7f7f5;border-bottom:1px solid #f7f7f5;{% if ov and ov.tipe == 'cancel' %}opacity:0.45;{% endif %}">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--text);">{{ j.jam_mulai|time:"H:i" }}–{{ j.jam_selesai|time:"H:i" }}</span>
+                    {% if ov %}
+                        {% if ov.tipe == 'cancel' %}<span style="font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 8px;border-radius:100px;font-weight:600;">Batal</span>
+                        {% elif ov.tipe == 'reschedule' %}<span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:1px 8px;border-radius:100px;font-weight:600;">Pindah</span>
+                        {% elif ov.tipe == 'mode' %}<span style="font-size:10px;background:#eff6ff;color:#1d4ed8;padding:1px 8px;border-radius:100px;font-weight:600;">Ganti Mode</span>
+                        {% else %}<span style="font-size:10px;background:#f3f4f6;color:#374151;padding:1px 8px;border-radius:100px;font-weight:600;">Info</span>
+                        {% endif %}
+                    {% else %}
+                        <span style="font-size:10px;padding:1px 8px;border-radius:100px;font-weight:600;
+                            {% if j.mode == 'online' %}background:#eff6ff;color:#1d4ed8;
+                            {% elif j.mode == 'hybrid' %}background:#f3e8ff;color:#7e22ce;
+                            {% else %}background:#f0fdf4;color:#166534;{% endif %}">{{ j.get_mode_display }}</span>
+                    {% endif %}
+                </div>
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;">{{ j.mata_kuliah.nama }}</div>
+                <div style="font-size:11.5px;color:var(--text-tertiary);">
+                    {% if j.ruang %}📍 {{ j.ruang }}{% endif %}
+                    {% if j.dosen %} · {{ j.dosen }}{% endif %}
+                </div>
+                {% if ov and ov.catatan %}<div style="font-size:11px;color:#b45309;margin-top:4px;background:#fffbeb;padding:4px 8px;border-radius:6px;">{{ ov.catatan }}</div>{% endif %}
+                {% if ov and ov.tipe == 'mode' and ov.link_online %}
+                <a href="{{ ov.link_online }}" target="_blank" style="font-size:11px;color:#2563eb;margin-top:5px;display:inline-flex;align-items:center;gap:4px;">🔗 Link Online</a>
+                {% elif j.mode != 'offline' and j.link_online %}
+                <a href="{{ j.link_online }}" target="_blank" style="font-size:11px;color:#2563eb;margin-top:5px;display:inline-flex;align-items:center;gap:4px;">🔗 Link Online</a>
+                {% endif %}
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </div>
+        <div style="padding:10px 20px;border-top:1px solid #f7f7f5;">
+            <a href="{% url 'jadwal_statis_tambah' %}" style="font-size:12px;color:var(--text-secondary);text-decoration:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-secondary)'">＋ Tambah jadwal →</a>
+        </div>
+        {% else %}
+        <div style="padding:28px;text-align:center;display:flex;align-items:center;justify-content:center;gap:20px;">
+            <div style="font-size:32px;">📭</div>
+            <div>
+                <div style="font-size:13.5px;font-weight:500;color:var(--text-secondary);">Tidak ada kelas hari ini</div>
+                <a href="{% url 'jadwal_statis_tambah' %}" style="font-size:12px;color:#2563eb;margin-top:4px;display:inline-block;">＋ Tambah jadwal statis →</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
 
-        {# Kolom Kiri #}
+    {# ── GRID UTAMA: 2 kolom balance ─────────────────────────────────────── #}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="dashboard-grid">
+
+        {# Kolom Kiri: Kehadiran Rendah + Distribusi Grade #}
         <div style="display:flex;flex-direction:column;gap:20px;">
 
             {# Mahasiswa dengan kehadiran di bawah 75% #}
@@ -198,20 +261,57 @@
 
         </div>
 
-        {# Kolom Kanan #}
+        {# Kolom Kanan: Quick Actions + Perubahan Jadwal + Tugas + Pertemuan #}
         <div style="display:flex;flex-direction:column;gap:20px;">
 
-            {# Quick Actions #}
-            <div class="notion-card fade fade-2" style="padding:20px;">
+            {# Quick Actions — horizontal grid #}
+            <div class="notion-card fade fade-2" style="padding:16px 20px;">
                 <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px;">Quick Actions</div>
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                    <a href="{% url 'buat_pertemuan' %}" class="btn btn-primary" style="justify-content:center;padding:9px;">＋ Buat Pertemuan</a>
-                    <a href="{% url 'buat_tugas' %}" class="btn btn-secondary" style="justify-content:center;padding:9px;">📝 Buat Tugas</a>
-                    <a href="{% url 'buat_pengumuman' %}" class="btn btn-secondary" style="justify-content:center;padding:9px;">📢 Buat Pengumuman</a>
-                    <a href="{% url 'unggah_materi' %}" class="btn btn-secondary" style="justify-content:center;padding:9px;">⬆️ Unggah Materi</a>
-                    <a href="{% url 'rekap_mahasiswa' %}" class="btn btn-secondary" style="justify-content:center;padding:9px;">📊 Rekap Mahasiswa</a>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <a href="{% url 'buat_pertemuan' %}" class="btn btn-primary" style="justify-content:center;padding:9px;font-size:12.5px;">＋ Buat Pertemuan</a>
+                    <a href="{% url 'buat_tugas' %}" class="btn btn-secondary" style="justify-content:center;padding:9px;font-size:12.5px;">📝 Buat Tugas</a>
+                    <a href="{% url 'buat_pengumuman' %}" class="btn btn-secondary" style="justify-content:center;padding:9px;font-size:12.5px;">📢 Pengumuman</a>
+                    <a href="{% url 'unggah_materi' %}" class="btn btn-secondary" style="justify-content:center;padding:9px;font-size:12.5px;">⬆️ Unggah Materi</a>
+                </div>
+                <a href="{% url 'rekap_mahasiswa' %}" class="btn btn-secondary" style="justify-content:center;padding:9px;font-size:12.5px;width:100%;margin-top:8px;box-sizing:border-box;">📊 Rekap Mahasiswa</a>
+            </div>
+
+            {# Perubahan Jadwal Upcoming #}
+            {% if perubahan_upcoming %}
+            <div class="notion-card fade fade-3" style="overflow:hidden;">
+                <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--text);">⚡ Perubahan Jadwal</div>
+                        <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px;">7 hari ke depan</div>
+                    </div>
+                    <span style="background:#fef9c3;color:#854d0e;font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;">{{ perubahan_upcoming|length }}</span>
+                </div>
+                {% for p in perubahan_upcoming %}
+                <div style="padding:11px 16px;border-bottom:1px solid #f7f7f5;">
+                    <div style="display:flex;align-items:flex-start;gap:10px;">
+                        <div style="width:32px;height:32px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;
+                            {% if p.tipe == 'cancel' %}background:#fee2e2;
+                            {% elif p.tipe == 'reschedule' %}background:#fef9c3;
+                            {% elif p.tipe == 'mode' %}background:#eff6ff;
+                            {% else %}background:#f3f4f6;{% endif %}">
+                            {% if p.tipe == 'cancel' %}🚫{% elif p.tipe == 'reschedule' %}🔀{% elif p.tipe == 'mode' %}💻{% else %}ℹ️{% endif %}
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:12.5px;font-weight:500;color:var(--text);">{{ p.mata_kuliah.nama }}</div>
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">
+                                {{ p.get_tipe_display }} · {{ p.tanggal_asli|date:"d M" }}
+                                {% if p.tipe == 'reschedule' and p.tanggal_baru %} → {{ p.tanggal_baru|date:"d M" }}{% endif %}
+                            </div>
+                            {% if p.catatan %}<div style="font-size:11px;color:#6b7280;margin-top:2px;">{{ p.catatan|truncatechars:50 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div style="padding:10px 16px;">
+                    <a href="{% url 'jadwal' %}" style="font-size:12px;color:var(--text-secondary);text-decoration:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-secondary)'">Lihat detail jadwal →</a>
                 </div>
             </div>
+            {% endif %}
 
             {# Tugas Deadline Dekat #}
             <div class="notion-card fade fade-3" style="overflow:hidden;">
@@ -359,8 +459,70 @@
         </div>
     </div>
 
+    {# ── Row 1b: Jadwal Hari Ini ──────────────────────────────────────────── #}
+    <div class="fade fade-2" style="margin-bottom:14px;">
+        <div class="notion-card" style="overflow:hidden;">
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:var(--text);">🗓️ Jadwal Hari Ini</div>
+                    <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px;">{% if hari_ini_label %}{{ hari_ini_label }}{% else %}Hari ini{% endif %}</div>
+                </div>
+                <a href="{% url 'jadwal' %}" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">Lihat Semua →</a>
+            </div>
+            {% if jadwal_hari_ini_display %}
+            <div style="display:flex;flex-wrap:wrap;gap:0;">
+                {% for item in jadwal_hari_ini_display %}
+                {% with j=item.jadwal ov=item.override %}
+                <div style="flex:1;min-width:200px;padding:12px 20px;border-right:1px solid #f7f7f5;border-bottom:1px solid #f7f7f5;{% if ov and ov.tipe == 'cancel' %}opacity:0.5;{% endif %}">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;">
+                        <span style="font-size:13px;font-weight:600;color:var(--text);">{{ j.jam_mulai|time:"H:i" }}</span>
+                        <span style="font-size:11.5px;color:var(--text-tertiary);">– {{ j.jam_selesai|time:"H:i" }}</span>
+                        {% if ov %}
+                            {% if ov.tipe == 'cancel' %}<span style="font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 7px;border-radius:100px;font-weight:600;">Batal</span>
+                            {% elif ov.tipe == 'reschedule' %}<span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:1px 7px;border-radius:100px;font-weight:600;">Pindah</span>
+                            {% elif ov.tipe == 'mode' %}<span style="font-size:10px;background:#eff6ff;color:#1d4ed8;padding:1px 7px;border-radius:100px;font-weight:600;">Ganti Mode</span>
+                            {% else %}<span style="font-size:10px;background:#f3f4f6;color:#374151;padding:1px 7px;border-radius:100px;font-weight:600;">Info</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="font-size:10px;padding:1px 7px;border-radius:100px;font-weight:600;
+                                {% if j.mode == 'online' %}background:#eff6ff;color:#1d4ed8;
+                                {% elif j.mode == 'hybrid' %}background:#f3e8ff;color:#7e22ce;
+                                {% else %}background:#f0fdf4;color:#166534;{% endif %}">{{ j.get_mode_display }}</span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">{{ j.mata_kuliah.nama }}</div>
+                    <div style="font-size:11px;color:var(--text-tertiary);">
+                        {% if j.ruang %}{{ j.ruang }}{% endif %}
+                        {% if j.dosen %} · {{ j.dosen }}{% endif %}
+                    </div>
+                    {% if ov and ov.tipe == 'mode' and ov.link_online %}
+                    <a href="{{ ov.link_online }}" target="_blank" style="font-size:11px;color:#2563eb;margin-top:4px;display:inline-block;">🔗 Link Online</a>
+                    {% elif j.mode != 'offline' and j.link_online %}
+                    <a href="{{ j.link_online }}" target="_blank" style="font-size:11px;color:#2563eb;margin-top:4px;display:inline-block;">🔗 Link Online</a>
+                    {% endif %}
+                    {% if ov and ov.catatan %}<div style="font-size:11px;color:#b45309;margin-top:3px;">{{ ov.catatan }}</div>{% endif %}
+                </div>
+                {% endwith %}
+                {% endfor %}
+            </div>
+            {% if perubahan_upcoming %}
+            <div style="padding:10px 20px;background:#fffbeb;border-top:1px solid #fde68a;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#854d0e;">⚡ Ada {{ perubahan_upcoming|length }} perubahan jadwal dalam 7 hari ke depan</span>
+                <a href="{% url 'jadwal' %}" style="font-size:12px;color:#b45309;font-weight:500;text-decoration:none;">Lihat →</a>
+            </div>
+            {% endif %}
+            {% else %}
+            <div style="padding:20px;text-align:center;">
+                <div style="font-size:24px;margin-bottom:6px;">📭</div>
+                <div style="font-size:13px;color:var(--text-tertiary);">Tidak ada kelas hari ini</div>
+                <a href="{% url 'jadwal' %}" style="font-size:12px;color:#2563eb;margin-top:6px;display:inline-block;">Lihat jadwal mingguan →</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
     {# ── Row 2: grid 2 kolom — Pertemuan + Tugas/Nilai ───────────────────── #}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="mhs-row2-grid fade fade-2">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="mhs-row2-grid fade fade-3">
 
         {# Pertemuan terbaru dengan status izin #}
         <div class="notion-card" style="overflow:hidden;">
