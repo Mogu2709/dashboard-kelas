@@ -35,6 +35,7 @@ urlpatterns = [
 
     # ─── Fitur Utama ──────────────────────────────────────────────────────────
     path('absensi/', include('attendance.urls')),
+    path('jadwal/', include('jadwal.urls')),
     path('tugas/', include('tasks.urls')),
     path("sentry-debug/", trigger_error),
 ]

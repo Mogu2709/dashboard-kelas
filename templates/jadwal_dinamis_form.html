@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block nav_jadwal %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header fade">
+    <h1 class="page-title">Catat Perubahan Jadwal</h1>
+    <p class="page-subtitle">Pilih jadwal yang ingin diubah</p>
+</div>
+
+<div class="notion-card fade fade-1" style="max-width:560px;padding:24px;">
+    <form method="post" id="dinamis-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label class="form-label">Jadwal yang Diubah</label>
+            <select name="jadwal_statis" class="form-input" id="jadwal-select" required>
+                <option value="">— Pilih Jadwal —</option>
+                {% for item in jadwal_list %}
+                <option value="{{ item.jadwal.pk }}"
+                    data-tanggal="{{ item.next_date }}"
+                    data-jam-mulai="{{ item.jam_mulai }}"
+                    data-jam-selesai="{{ item.jam_selesai }}"
+                    data-ruang="{{ item.ruang }}"
+                    data-mode="{{ item.mode }}">
+                    {{ item.jadwal.mata_kuliah.nama }} — {{ item.jadwal.get_hari_display }} {{ item.jam_mulai }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Tanggal Pertemuan yang Terpengaruh</label>
+            <input type="date" name="tanggal_asli" id="tanggal-asli" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Tipe Perubahan</label>
+            <select name="tipe" class="form-input" id="tipe-select" required>
+                <option value="">— Pilih Tipe —</option>
+                {% for val, label in tipe_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {# Reschedule fields #}
+        <div id="group-reschedule" style="display:none;">
+            <div style="background:var(--bg-secondary);border-radius:8px;padding:14px;margin-bottom:14px;">
+                <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Jadwal Pengganti</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Tanggal Baru</label>
+                        <input type="date" name="tanggal_baru" class="form-input">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Jam Mulai</label>
+                        <input type="time" name="jam_mulai_baru" id="jam-mulai-baru" class="form-input">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Jam Selesai</label>
+                        <input type="time" name="jam_selesai_baru" id="jam-selesai-baru" class="form-input">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;margin-top:10px;">
+                    <label class="form-label">Ruang Baru <span style="color:var(--text-tertiary);font-weight:400;">(kosongkan jika sama)</span></label>
+                    <input type="text" name="ruang_baru" id="ruang-baru" class="form-input" placeholder="Contoh: GKU Lt.2 R.201">
+                </div>
+            </div>
+        </div>
+
+        {# Mode change fields #}
+        <div id="group-mode" style="display:none;">
+            <div style="background:var(--bg-secondary);border-radius:8px;padding:14px;margin-bottom:14px;">
+                <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Mode Baru</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Mode</label>
+                        <select name="mode_baru" class="form-input" id="mode-baru-select">
+                            <option value="">— Pilih —</option>
+                            {% for val, label in mode_choices %}
+                            <option value="{{ val }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;" id="link-baru-group" style="display:none;">
+                        <label class="form-label">Link Online</label>
+                        <input type="url" name="link_online" class="form-input" placeholder="https://...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Catatan <span style="color:var(--text-tertiary);font-weight:400;">(opsional)</span></label>
+            <textarea name="catatan" class="form-input" rows="2" placeholder="Contoh: Dosen berhalangan hadir"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:8px;">
+            <button type="submit" class="btn btn-primary">💾 Simpan</button>
+            <a href="{% url 'jadwal' %}" class="btn btn-secondary">Batal</a>
+        </div>
+    </form>
+</div>
+
+<script>
+const jadwalSelect = document.getElementById('jadwal-select');
+const tanggalAsli  = document.getElementById('tanggal-asli');
+const tipeSelect   = document.getElementById('tipe-select');
+const groupReschedule = document.getElementById('group-reschedule');
+const groupMode    = document.getElementById('group-mode');
+const modeBaru     = document.getElementById('mode-baru-select');
+const linkBaru     = document.getElementById('link-baru-group');
+
+// Auto-fill tanggal saat jadwal dipilih
+jadwalSelect.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    if (opt.value) {
+        tanggalAsli.value = opt.dataset.tanggal;
+        document.getElementById('jam-mulai-baru').value  = opt.dataset.jamMulai;
+        document.getElementById('jam-selesai-baru').value = opt.dataset.jamSelesai;
+        document.getElementById('ruang-baru').value = opt.dataset.ruang;
+    }
+});
+
+function updateFields() {
+    const tipe = tipeSelect.value;
+    groupReschedule.style.display = tipe === 'reschedule' ? 'block' : 'none';
+    groupMode.style.display       = tipe === 'mode' ? 'block' : 'none';
+}
+
+modeBaru.addEventListener('change', function() {
+    linkBaru.style.display = this.value !== 'offline' ? 'block' : 'none';
+});
+
+tipeSelect.addEventListener('change', updateFields);
+updateFields();
+</script>
+
+{% endblock %}

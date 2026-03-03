@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block nav_jadwal %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header fade">
+    <span class="page-emoji">🗓️</span>
+    <h1 class="page-title">{{ action }} Jadwal Statis</h1>
+    <p class="page-subtitle">Template jadwal mingguan per semester</p>
+</div>
+
+<div class="notion-card fade fade-1" style="max-width:560px;padding:24px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label class="form-label">Mata Kuliah</label>
+            <select name="mata_kuliah" class="form-input" required>
+                <option value="">— Pilih Mata Kuliah —</option>
+                {% for mk in matkul_list %}
+                <option value="{{ mk.pk }}" {% if jadwal and jadwal.mata_kuliah_id == mk.pk %}selected{% endif %}>
+                    {{ mk.nama }} (Sem {{ mk.semester }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+                <label class="form-label">Semester</label>
+                <select name="semester" class="form-input" required>
+                    {% for s in "12345678" %}
+                    <option value="{{ s }}" {% if jadwal and jadwal.semester == s|add:0 %}selected{% elif not jadwal and semester_aktif == s|add:0 %}selected{% endif %}>Semester {{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Hari</label>
+                <select name="hari" class="form-input" required>
+                    <option value="">— Pilih Hari —</option>
+                    {% for val, label in hari_choices %}
+                    <option value="{{ val }}" {% if jadwal and jadwal.hari == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+                <label class="form-label">Jam Mulai</label>
+                <input type="time" name="jam_mulai" class="form-input"
+                    value="{% if jadwal %}{{ jadwal.jam_mulai|time:'H:i' }}{% endif %}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Jam Selesai</label>
+                <input type="time" name="jam_selesai" class="form-input"
+                    value="{% if jadwal %}{{ jadwal.jam_selesai|time:'H:i' }}{% endif %}" required>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+                <label class="form-label">Ruang</label>
+                <input type="text" name="ruang" class="form-input" placeholder="Contoh: GKU Lt.3 R.302"
+                    value="{% if jadwal %}{{ jadwal.ruang }}{% endif %}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Dosen</label>
+                <input type="text" name="dosen" class="form-input" placeholder="Nama dosen"
+                    value="{% if jadwal %}{{ jadwal.dosen }}{% endif %}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Mode Kelas</label>
+            <select name="mode" class="form-input" id="mode-select">
+                {% for val, label in mode_choices %}
+                <option value="{{ val }}" {% if jadwal and jadwal.mode == val %}selected{% elif not jadwal and val == 'offline' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group" id="link-group" style="{% if not jadwal or jadwal.mode == 'offline' %}display:none;{% endif %}">
+            <label class="form-label">Link Online (Zoom/Meet)</label>
+            <input type="url" name="link_online" class="form-input" placeholder="https://..."
+                value="{% if jadwal %}{{ jadwal.link_online }}{% endif %}">
+        </div>
+
+        {% if jadwal %}
+        <div class="form-group" style="padding:12px;background:var(--bg-secondary);border-radius:7px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
+                <input type="checkbox" name="aktif" {% if jadwal.aktif %}checked{% endif %}
+                    style="width:14px;height:14px;accent-color:var(--text);">
+                Jadwal aktif (tampil di kalender)
+            </label>
+        </div>
+        {% endif %}
+
+        <div style="display:flex;gap:10px;margin-top:20px;">
+            <button type="submit" class="btn btn-primary">💾 Simpan Jadwal</button>
+            <a href="{% url 'jadwal' %}" class="btn btn-secondary">Batal</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('mode-select').addEventListener('change', function() {
+    const linkGroup = document.getElementById('link-group');
+    linkGroup.style.display = this.value !== 'offline' ? 'block' : 'none';
+});
+</script>
+
+{% endblock %}

@@ -79,6 +79,10 @@
                 class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 transition {% block nav_pengumuman %}{% endblock %}">
                 <span>🔔</span> Pengumuman
             </a>
+            <a href="{% url 'jadwal' %}" onclick="closeSidebar()"
+                class="nav-item {% block nav_jadwal %}{% endblock %}">
+                <span>🗓️</span> Jadwal
+            </a>
             <a href="{% url 'tugas_list' %}" onclick="closeSidebar()"
                 class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 transition {% block nav_tugas %}{% endblock %}">
                 <span>📝</span> Tugas

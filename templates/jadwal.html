@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block nav_jadwal %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header fade" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+        <h1 class="page-title">Jadwal Kuliah</h1>
+        <p class="page-subtitle">Semester {{ semester }} &nbsp;·&nbsp; {{ hari_ini|date:"l, d F Y" }}</p>
+    </div>
+    {% if is_ketua %}
+    <div style="display:flex;gap:8px;">
+        <a href="{% url 'jadwal_statis_tambah' %}" class="btn btn-primary">＋ Jadwal</a>
+        <a href="{% url 'jadwal_dinamis_tambah' %}" class="btn btn-secondary">⚡ Perubahan</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="fade fade-1" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+    <span style="font-size:12px;color:var(--text-tertiary);font-weight:500;">Semester</span>
+    <select onchange="window.location='?semester='+this.value" style="border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:13px;font-family:'Geist',sans-serif;color:var(--text);background:white;cursor:pointer;outline:none;">
+        {% for s in semester_list %}
+        <option value="{{ s }}" {% if s == semester %}selected{% endif %}>Semester {{ s }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+{% if jadwal_hari_ini %}
+<div class="notion-card fade fade-1" style="overflow:hidden;">
+    <div class="card-header">
+        <div>
+            <div class="card-title">Hari Ini — {{ hari_ini_label }}</div>
+            <div class="card-subtitle">{{ hari_ini|date:"d F Y" }}</div>
+        </div>
+    </div>
+    {% for j in jadwal_hari_ini %}
+    <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;{% if not forloop.last %}border-bottom:1px solid #fafafa;{% endif %}">
+        <div style="text-align:right;flex-shrink:0;width:44px;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);font-family:'IBM Plex Mono',monospace;">{{ j.jam_mulai|time:"H:i" }}</div>
+            <div style="font-size:10px;color:var(--text-tertiary);">{{ j.jam_selesai|time:"H:i" }}</div>
+        </div>
+        <div style="width:3px;height:34px;border-radius:2px;flex-shrink:0;background:{% if j.mode == 'online' %}#3b82f6{% elif j.mode == 'hybrid' %}#8b5cf6{% else %}#22c55e{% endif %};"></div>
+        <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:3px;">{{ j.mata_kuliah.nama }}</div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                {% if j.ruang %}<span style="font-size:12px;color:var(--text-tertiary);">📍 {{ j.ruang }}</span>{% endif %}
+                {% if j.dosen %}<span style="font-size:12px;color:var(--text-tertiary);">{{ j.dosen }}</span>{% endif %}
+                <span class="chip {% if j.mode == 'online' %}chip-blue{% elif j.mode == 'hybrid' %}chip-yellow{% else %}chip-green{% endif %}" style="font-size:10.5px;">{{ j.get_mode_display }}</span>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            {% if j.mode != 'offline' and j.link_online %}<a href="{{ j.link_online }}" target="_blank" class="btn btn-primary" style="font-size:12px;padding:5px 12px;">Join →</a>{% endif %}
+            {% if is_ketua %}<a href="{% url 'jadwal_statis_edit' j.pk %}" style="color:var(--text-tertiary);font-size:13px;text-decoration:none;padding:4px 8px;border-radius:5px;background:var(--bg-secondary);">Edit</a>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="notion-card fade fade-2" style="overflow:hidden;">
+    <div class="card-header">
+        <div class="card-title">Jadwal Mingguan — Semester {{ semester }}</div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:560px;">
+            <thead>
+                <tr>
+                    {% for hari_key, hari_label, _ in weekly_display %}
+                    <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);color:{% if hari_key == hari_ini_key %}var(--text){% else %}var(--text-tertiary){% endif %};background:{% if hari_key == hari_ini_key %}var(--bg-secondary){% else %}transparent{% endif %};">
+                        {{ hari_label }}{% if hari_key == hari_ini_key %} <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--text);margin-left:3px;vertical-align:middle;"></span>{% endif %}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="vertical-align:top;">
+                    {% for hari_key, hari_label, slots in weekly_display %}
+                    <td style="padding:10px;border-right:1px solid var(--border);min-width:130px;background:{% if hari_key == hari_ini_key %}#fafaf9{% else %}transparent{% endif %};">
+                        {% if slots %}
+                        {% for item in slots %}
+                        {% with j=item.jadwal ov=item.override is_pindahan=item.is_pindahan %}
+
+                        {% if ov and ov.tipe == 'cancel' %}
+                        {# CANCELLED — tampil dicoret + badge merah #}
+                        <div style="border:1px solid #fecaca;border-radius:7px;padding:8px 10px;margin-bottom:{% if not forloop.last %}6px{% else %}0{% endif %};border-left:3px solid #ef4444;background:#fff5f5;opacity:0.8;">
+                            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                                <span style="font-size:11px;background:#ef4444;color:white;padding:1px 6px;border-radius:4px;font-weight:600;flex-shrink:0;">BATAL</span>
+                                <div style="font-size:12px;font-weight:600;color:#9ca3af;text-decoration:line-through;line-height:1.3;">{{ j.mata_kuliah.nama }}</div>
+                            </div>
+                            <div style="font-size:10.5px;color:#fca5a5;font-family:'IBM Plex Mono',monospace;">{{ j.jam_mulai|time:"H:i" }}–{{ j.jam_selesai|time:"H:i" }}</div>
+                            {% if ov.catatan %}<div style="font-size:10px;color:#f87171;margin-top:3px;font-style:italic;">{{ ov.catatan }}</div>{% endif %}
+                        </div>
+
+                        {% elif is_pindahan %}
+                        {# PINDAHAN — slot baru di hari lain #}
+                        <div style="border:1px solid #fde68a;border-radius:7px;padding:8px 10px;margin-bottom:{% if not forloop.last %}6px{% else %}0{% endif %};border-left:3px solid #f59e0b;background:#fffbeb;">
+                            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                                <span style="font-size:11px;background:#f59e0b;color:white;padding:1px 6px;border-radius:4px;font-weight:600;flex-shrink:0;">PINDAH</span>
+                                <div style="font-size:12px;font-weight:600;color:var(--text);line-height:1.3;">{{ j.mata_kuliah.nama }}</div>
+                            </div>
+                            <div style="font-size:10.5px;color:var(--text-tertiary);font-family:'IBM Plex Mono',monospace;">
+                                {% if ov.jam_mulai_baru %}{{ ov.jam_mulai_baru|time:"H:i" }}–{{ ov.jam_selesai_baru|time:"H:i" }}{% else %}{{ j.jam_mulai|time:"H:i" }}–{{ j.jam_selesai|time:"H:i" }}{% endif %}
+                            </div>
+                            {% if ov.ruang_baru %}<div style="font-size:10.5px;color:var(--text-tertiary);margin-top:2px;">{{ ov.ruang_baru }}</div>{% elif j.ruang %}<div style="font-size:10.5px;color:var(--text-tertiary);margin-top:2px;">{{ j.ruang }}</div>{% endif %}
+                        </div>
+
+                        {% elif ov and ov.tipe == 'reschedule' %}
+                        {# ORIGINAL RESCHEDULE — slot lama dicoret #}
+                        <div style="border:1px solid #fde68a;border-radius:7px;padding:8px 10px;margin-bottom:{% if not forloop.last %}6px{% else %}0{% endif %};border-left:3px solid #f59e0b;background:#fffdf0;opacity:0.7;">
+                            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                                <span style="font-size:11px;background:#f59e0b;color:white;padding:1px 6px;border-radius:4px;font-weight:600;flex-shrink:0;">PINDAH</span>
+                                <div style="font-size:12px;font-weight:600;color:#9ca3af;text-decoration:line-through;line-height:1.3;">{{ j.mata_kuliah.nama }}</div>
+                            </div>
+                            <div style="font-size:10.5px;color:#fcd34d;font-family:'IBM Plex Mono',monospace;">{{ j.jam_mulai|time:"H:i" }}–{{ j.jam_selesai|time:"H:i" }}</div>
+                        </div>
+
+                        {% else %}
+                        {# NORMAL — dengan override mode jika ada #}
+                        {% with mode=ov.mode_baru|default:j.mode link=ov.link_online|default:j.link_online %}
+                        <div style="border:1px solid var(--border);border-radius:7px;padding:8px 10px;margin-bottom:{% if not forloop.last %}6px{% else %}0{% endif %};border-left:3px solid {% if mode == 'online' %}#3b82f6{% elif mode == 'hybrid' %}#8b5cf6{% else %}#22c55e{% endif %};background:white;">
+                            <div style="font-size:12px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:3px;">{{ j.mata_kuliah.nama }}</div>
+                            <div style="font-size:10.5px;color:var(--text-tertiary);font-family:'IBM Plex Mono',monospace;">{{ j.jam_mulai|time:"H:i" }}–{{ j.jam_selesai|time:"H:i" }}</div>
+                            {% if j.ruang %}<div style="font-size:10.5px;color:var(--text-tertiary);margin-top:2px;">{{ j.ruang }}</div>{% endif %}
+                            {% if ov and ov.tipe == 'mode' %}
+                            <div style="margin-top:5px;">
+                                <span class="chip {% if mode == 'online' %}chip-blue{% elif mode == 'hybrid' %}chip-yellow{% else %}chip-green{% endif %}" style="font-size:10px;">
+                                    {% if mode == 'online' %}🌐 Online{% elif mode == 'hybrid' %}🔀 Hybrid{% else %}🏫 Offline{% endif %}
+                                </span>
+                                {% if link %}<a href="{{ link }}" target="_blank" style="font-size:10px;color:#3b82f6;margin-left:4px;">Join →</a>{% endif %}
+                            </div>
+                            {% endif %}
+                            {% if is_ketua %}
+                            <div style="display:flex;gap:4px;margin-top:7px;">
+                                <a href="{% url 'jadwal_statis_edit' j.pk %}" style="font-size:10px;color:var(--text-secondary);text-decoration:none;padding:2px 7px;border-radius:4px;background:var(--bg-secondary);">Edit</a>
+                                <form method="post" action="{% url 'jadwal_statis_hapus' j.pk %}" style="display:inline;" onsubmit="return confirm('Hapus?')">{% csrf_token %}<button type="submit" style="font-size:10px;color:#dc2626;border:none;background:#fef2f2;padding:2px 7px;border-radius:4px;cursor:pointer;font-family:'Geist',sans-serif;">Hapus</button></form>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endwith %}
+                        {% endif %}
+                        {% endwith %}
+                        {% endfor %}
+                        {% else %}
+                        <div style="padding:16px 0;text-align:center;color:var(--text-tertiary);font-size:11px;">—</div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="notion-card fade fade-3" style="overflow:hidden;">
+    <div class="card-header">
+        <div>
+            <div class="card-title">Perubahan Jadwal</div>
+            <div class="card-subtitle">14 hari ke depan</div>
+        </div>
+        {% if is_ketua %}<a href="{% url 'jadwal_dinamis_tambah' %}" class="btn btn-secondary" style="font-size:12px;">＋ Tambah</a>{% endif %}
+    </div>
+    {% if perubahan %}
+    {% for p in perubahan %}
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 18px;{% if not forloop.last %}border-bottom:1px solid #fafafa;{% endif %}">
+        <div style="width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;{% if p.tipe == 'cancel' %}background:#fef2f2;{% elif p.tipe == 'reschedule' %}background:#fffbeb;{% elif p.tipe == 'mode' %}background:#eff6ff;{% else %}background:#f0fdf4;{% endif %}">
+            {% if p.tipe == 'cancel' %}❌{% elif p.tipe == 'reschedule' %}🔄{% elif p.tipe == 'mode' %}🌐{% else %}ℹ️{% endif %}
+        </div>
+        <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+                <span style="font-size:13px;font-weight:600;color:var(--text);">{{ p.mata_kuliah.nama }}</span>
+                <span class="chip {% if p.tipe == 'cancel' %}chip-red{% elif p.tipe == 'reschedule' %}chip-yellow{% elif p.tipe == 'mode' %}chip-blue{% else %}chip-green{% endif %}" style="font-size:10.5px;">{{ p.get_tipe_display }}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);">{{ p.tanggal_asli|date:"d F Y" }}{% if p.tipe == 'reschedule' and p.tanggal_baru %} → {{ p.tanggal_baru|date:"d F Y" }}{% if p.jam_mulai_baru %}, {{ p.jam_mulai_baru|time:"H:i" }}–{{ p.jam_selesai_baru|time:"H:i" }}{% endif %}{% if p.ruang_baru %}, {{ p.ruang_baru }}{% endif %}{% endif %}{% if p.tipe == 'mode' and p.mode_baru %} → {{ p.mode_baru|title }}{% if p.link_online %} · <a href="{{ p.link_online }}" target="_blank" style="color:#3b82f6;">Join</a>{% endif %}{% endif %}</div>
+            {% if p.catatan %}<div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px;font-style:italic;">{{ p.catatan }}</div>{% endif %}
+        </div>
+        {% if is_ketua %}
+        <form method="post" action="{% url 'jadwal_dinamis_hapus' p.pk %}" onsubmit="return confirm('Hapus?')">{% csrf_token %}<button type="submit" style="border:none;background:none;cursor:pointer;color:var(--text-tertiary);font-size:14px;padding:2px 4px;">✕</button></form>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state"><div class="empty-state-icon">✅</div>Tidak ada perubahan jadwal dalam 14 hari ke depan</div>
+    {% endif %}
+</div>
+
+{% endblock %}
