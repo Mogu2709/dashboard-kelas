@@ -241,7 +241,43 @@ def jadwal_dinamis_tambah(request):
                 dibuat_oleh       = request.user,
             )
             perubahan.save()
-            messages.success(request, 'Perubahan jadwal berhasil disimpan!')
+
+            # Kirim notifikasi ke semua mahasiswa
+            from tasks.views import _kirim_notif_semua
+            tipe_label = dict(JadwalDinamis.TIPE_CHOICES).get(perubahan.tipe, 'Perubahan')
+            matkul_nama = jadwal_obj.mata_kuliah.nama
+            tanggal_str = perubahan.tanggal_asli.strftime('%d %b')
+
+            if perubahan.tipe == 'cancel':
+                judul = f"Kelas {matkul_nama} Dibatalkan"
+                pesan = f"Pertemuan {tanggal_str} dibatalkan"
+                if perubahan.catatan:
+                    pesan += f" — {perubahan.catatan}"
+            elif perubahan.tipe == 'reschedule':
+                judul = f"Jadwal {matkul_nama} Dipindah"
+                pesan = f"Dari {tanggal_str}"
+                if perubahan.tanggal_baru:
+                    pesan += f" → {perubahan.tanggal_baru.strftime('%d %b')}"
+                if perubahan.jam_mulai_baru:
+                    pesan += f" {perubahan.jam_mulai_baru.strftime('%H:%M')}"
+            elif perubahan.tipe == 'mode':
+                judul = f"Kelas {matkul_nama} Ganti Mode"
+                pesan = f"{tanggal_str} → {perubahan.mode_baru.title()}"
+                if perubahan.link_online:
+                    pesan += f" | {perubahan.link_online}"
+            else:
+                judul = f"Info Jadwal {matkul_nama}"
+                pesan = perubahan.catatan or tanggal_str
+
+            _kirim_notif_semua(
+                tipe='jadwal',
+                judul=judul,
+                pesan=pesan,
+                url='/jadwal/',
+                exclude_user=request.user,
+            )
+
+            messages.success(request, 'Perubahan jadwal berhasil disimpan & notifikasi terkirim!')
             return redirect('jadwal')
         except Exception as e:
             messages.error(request, f'Gagal menyimpan: {e}')
