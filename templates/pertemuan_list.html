@@ -12,33 +12,40 @@
 <div class="page-content">
 
     <!-- Toolbar -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:20px;" class="fade fade-1">
-        <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <select name="semester" onchange="this.form.submit()"
-                style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;cursor:pointer;outline:none;">
-                <option value="">Semua Semester</option>
-                {% for sem in semester_list %}
-                <option value="{{ sem }}" {% if request.GET.semester == sem|stringformat:"s" %}selected{% endif %}>Semester {{ sem }}</option>
-                {% endfor %}
-            </select>
-            <select name="mata_kuliah" onchange="this.form.submit()"
-                style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;cursor:pointer;outline:none;">
-                <option value="">Semua Mata Kuliah</option>
-                {% for mk in mata_kuliah_list %}
-                <option value="{{ mk.id }}" {% if request.GET.mata_kuliah == mk.id|stringformat:"s" %}selected{% endif %}>{{ mk.nama }} (Sem {{ mk.semester }})</option>
-                {% endfor %}
-            </select>
+    <div style="margin-bottom:20px;" class="fade fade-1">
+        <form method="get">
+            <!-- Baris 1: Dropdowns -->
+            <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <select name="semester" onchange="this.form.submit()"
+                    style="flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;cursor:pointer;outline:none;">
+                    <option value="">Semua Semester</option>
+                    {% for sem in semester_list %}
+                    <option value="{{ sem }}" {% if request.GET.semester == sem|stringformat:"s" %}selected{% endif %}>Semester {{ sem }}</option>
+                    {% endfor %}
+                </select>
+                <select name="mata_kuliah" onchange="this.form.submit()"
+                    style="flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;cursor:pointer;outline:none;">
+                    <option value="">Semua Mata Kuliah</option>
+                    {% for mk in mata_kuliah_list %}
+                    <option value="{{ mk.id }}" {% if request.GET.mata_kuliah == mk.id|stringformat:"s" %}selected{% endif %}>{{ mk.nama }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- Baris 2: Filter status + aksi -->
+            <div style="display:flex;gap:6px;align-items:center;">
+                <a href="?" class="btn {% if not request.GET.status %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">Semua</a>
+                <a href="?{% if request.GET.semester %}semester={{ request.GET.semester }}&{% endif %}{% if request.GET.mata_kuliah %}mata_kuliah={{ request.GET.mata_kuliah }}&{% endif %}status=buka"
+                    class="btn {% if request.GET.status == 'buka' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">Buka</a>
+                <a href="?{% if request.GET.semester %}semester={{ request.GET.semester }}&{% endif %}{% if request.GET.mata_kuliah %}mata_kuliah={{ request.GET.mata_kuliah }}&{% endif %}status=tutup"
+                    class="btn {% if request.GET.status == 'tutup' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">Ditutup</a>
+                {% if request.GET.semester or request.GET.mata_kuliah or request.GET.status %}
+                <a href="{% url 'pertemuan_list' %}" style="font-size:13px;color:var(--text-tertiary);text-decoration:none;padding:0 4px;" title="Reset filter">✕</a>
+                {% endif %}
+                {% if user.is_superuser %}
+                <a href="{% url 'buat_pertemuan' %}" class="btn btn-primary" style="margin-left:auto;">＋ Buat Pertemuan</a>
+                {% endif %}
+            </div>
         </form>
-        <a href="?status=" class="btn {% if not request.GET.semester and not request.GET.mata_kuliah and not request.GET.status %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">Semua</a>
-        <a href="?status=buka" class="btn {% if request.GET.status == 'buka' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">● Buka</a>
-        <a href="?status=tutup" class="btn {% if request.GET.status == 'tutup' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size:12px;padding:5px 12px;">✓ Ditutup</a>
-        {% if request.GET.semester or request.GET.mata_kuliah or request.GET.status %}
-        <a href="{% url 'pertemuan_list' %}" class="btn btn-secondary" style="font-size:12px;padding:5px 10px;">✕ Reset</a>
-        {% endif %}
-        <span style="margin-left:auto;font-size:12px;color:var(--text-tertiary);">{{ pertemuan_list|length }} pertemuan</span>
-        {% if user.is_superuser %}
-        <a href="{% url 'buat_pertemuan' %}" class="btn btn-primary">＋ Buat Pertemuan</a>
-        {% endif %}
     </div>
 
     <!-- Desktop table -->
